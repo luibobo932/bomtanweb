@@ -2,10 +2,10 @@ import Link from "next/link";
 import type { ListingItem } from "@/data/mock-data";
 
 const statusMap: Record<ListingItem["status"], string> = {
-  con_ban: "Con ban",
-  dang_thuong_luong: "Dang TL",
-  da_ban: "Da ban",
-  ngung_ban: "Ngung",
+  con_ban: "Còn bán",
+  dang_thuong_luong: "Đang TL",
+  da_ban: "Đã bán",
+  ngung_ban: "Ngừng",
 };
 
 const statusClassMap: Record<ListingItem["status"], string> = {

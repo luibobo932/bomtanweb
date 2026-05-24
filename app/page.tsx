@@ -14,90 +14,123 @@ export default async function HomePage() {
 
   return (
     <SiteShell>
+      {/* ── Hero ── */}
       <section className="container-shell">
-        <div className="px-4 pb-5 pt-8 text-center">
-          <h1 className="text-[28px] font-bold leading-[1.2] tracking-[-0.03em] text-white">
-            Xem <span className="text-[var(--brand)]">video review</span> nha pho
-            <br />
-            trung tam Sai Gon
-          </h1>
-          <p className="mx-auto mt-3 max-w-[640px] text-[14px] leading-6 text-zinc-400">
-            Nen tang video BDS dau tien chuyen nha pho Q1, Q3, Q5, Q10
-            <br />
-            duoi 20 ty tu doi ngu chuyen gia va profile moi gioi that.
-          </p>
+        <div className="relative overflow-hidden px-4 pb-8 pt-12 text-center md:pt-16">
+          {/* Glow background */}
+          <div className="pointer-events-none absolute left-1/2 top-0 h-[400px] w-[600px] -translate-x-1/2 rounded-full bg-[var(--brand)] opacity-[0.06] blur-[120px]" />
 
-          <div className="mt-5 flex flex-wrap justify-center gap-2">
-            <Link href="/feed" className="primary-btn">
-              Xem video ngay
-            </Link>
-            <Link href="/nha-ban" className="secondary-btn">
-              Tim nha phu hop
-            </Link>
-          </div>
-
-          <div className="mt-4 flex flex-wrap justify-center gap-3">
-            {stats.map((item) => (
-              <div
-                key={item.label}
-                className="rounded-[8px] border border-[#2e2e28] bg-[#1e1e1e] px-4 py-2 text-center"
-              >
-                <div className="text-[18px] font-bold text-[var(--brand)]">{item.value}</div>
-                <div className="text-[11px] text-[var(--faint)]">{item.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <section className="px-4 pb-3">
-          <div className="section-header-row">
-            <div>
-              <div className="section-mini-title">🎬 Video moi nhat</div>
-              <div className="section-mini-subtitle">Review nha thuc te, kien thuc BDS</div>
+          <div className="relative">
+            <div className="mx-auto mb-4 inline-flex items-center gap-2 rounded-full border border-[#2e2e28] bg-[#141414] px-4 py-1.5 text-[12px] text-zinc-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand)]" />
+              Nền tảng video BDS đầu tiên tại TP.HCM
             </div>
-            <Link href="/feed" className="see-all-link">
-              Xem tat ca →
-            </Link>
-          </div>
-        </section>
 
-        <section className="px-4">
-          <HomeVideoStrip videos={homeVideos} />
-        </section>
+            <h1 className="mx-auto max-w-3xl text-[36px] font-black leading-[1.15] tracking-[-0.04em] text-white md:text-[52px] lg:text-[60px]">
+              Xem{" "}
+              <span className="text-[var(--brand)]">video review nhà phố</span>
+              <br className="hidden md:block" />
+              {" "}trước khi xuống tiền
+            </h1>
 
-        <section className="px-4 pb-3 pt-6">
-          <div className="section-header-row">
-            <div>
-              <div className="section-mini-title">🏠 Nha dang ban</div>
-              <div className="section-mini-subtitle">Cap nhat lien tuc</div>
-            </div>
-            <Link href="/nha-ban" className="see-all-link">
-              Xem tat ca →
-            </Link>
-          </div>
-        </section>
-
-        <section className="px-4">
-          <div className="home-listing-grid">
-            {homeListings.map((listing) => (
-              <ListingCard key={listing.id} listing={listing} />
-            ))}
-          </div>
-        </section>
-
-        <section className="px-4 pb-8 pt-6">
-          <div className="cta-banner p-5">
-            <div className="text-[18px] font-semibold text-white">Ban nha? Gui thong tin ngay</div>
-            <p className="mt-2 text-[13px] text-zinc-300">
-              Doi ngu chung toi se lien he xac minh va tu van trong 2 gio lam viec.
+            <p className="mx-auto mt-4 max-w-xl text-[15px] leading-7 text-zinc-400 md:text-[16px]">
+              Q1 · Q3 · Q5 · Q10 — Dưới 20 tỷ · Đội ngũ chuyên gia review thực tế,
+              không quảng cáo, không che giấu nhược điểm.
             </p>
-            <div className="mt-4">
-              <Link href="/gui-nha-ban" className="secondary-btn border-[rgba(255,255,255,0.12)] bg-transparent text-white">
-                Gui thong tin →
+
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <Link href="/feed" className="primary-btn !px-6 !py-3 !text-[15px]">
+                Xem video ngay →
+              </Link>
+              <Link href="/gui-nhu-cau" className="secondary-btn !px-6 !py-3 !text-[15px]">
+                Tư vấn miễn phí
               </Link>
             </div>
+
+            {/* Stats */}
+            <div className="mt-8 flex flex-wrap justify-center gap-3">
+              {stats.map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-[10px] border border-[#2e2e28] bg-[#141414] px-5 py-3 text-center"
+                >
+                  <div className="text-[22px] font-black text-[var(--brand)]">{item.value}</div>
+                  <div className="mt-0.5 text-[11px] text-zinc-500">{item.label}</div>
+                </div>
+              ))}
+            </div>
           </div>
-        </section>
+        </div>
+      </section>
+
+      {/* ── Trust bar ── */}
+      <section className="border-y border-[#2e2e28] bg-[#0d0d0d]">
+        <div className="container-shell px-4 py-4">
+          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-[12px] text-zinc-500">
+            <span className="flex items-center gap-2"><span className="text-[var(--brand)]">✓</span> Review thực tế, không tô vẽ</span>
+            <span className="flex items-center gap-2"><span className="text-[var(--brand)]">✓</span> Pháp lý minh bạch</span>
+            <span className="flex items-center gap-2"><span className="text-[var(--brand)]">✓</span> Chuyên gia có kinh nghiệm 10+ năm</span>
+            <span className="flex items-center gap-2"><span className="text-[var(--brand)]">✓</span> Tư vấn miễn phí, không ép mua</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Video strip ── */}
+      <section className="container-shell px-4 pb-3 pt-8">
+        <div className="section-header-row">
+          <div>
+            <div className="section-mini-title">🎬 Video mới nhất</div>
+            <div className="section-mini-subtitle">Review nhà thực tế, kiến thức BDS</div>
+          </div>
+          <Link href="/feed" className="see-all-link">Xem tất cả →</Link>
+        </div>
+      </section>
+
+      <section className="px-4">
+        <HomeVideoStrip videos={homeVideos} />
+      </section>
+
+      {/* ── Listings ── */}
+      <section className="container-shell px-4 pb-3 pt-8">
+        <div className="section-header-row">
+          <div>
+            <div className="section-mini-title">🏠 Nhà đang bán</div>
+            <div className="section-mini-subtitle">Cập nhật liên tục</div>
+          </div>
+          <Link href="/nha-ban" className="see-all-link">Xem tất cả →</Link>
+        </div>
+      </section>
+
+      <section className="px-4">
+        <div className="home-listing-grid">
+          {homeListings.map((listing) => (
+            <ListingCard key={listing.id} listing={listing} />
+          ))}
+        </div>
+      </section>
+
+      {/* ── CTA banner ── */}
+      <section className="container-shell px-4 pb-12 pt-8">
+        <div className="relative overflow-hidden rounded-[24px] border border-[#2e2e28] bg-gradient-to-br from-[#1a0a04] to-[#0a0a0a] p-6 md:p-8">
+          <div className="pointer-events-none absolute right-0 top-0 h-48 w-48 rounded-full bg-[var(--brand)] opacity-[0.08] blur-[60px]" />
+          <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--brand)]">Chủ nhà chú ý</div>
+              <div className="mt-2 text-[20px] font-black text-white md:text-[24px]">
+                Bán nhà? Gửi thông tin ngay — miễn phí
+              </div>
+              <p className="mt-2 text-sm text-zinc-400">
+                Đội ngũ sẽ liên hệ xác minh và tư vấn trong 2 giờ làm việc.
+              </p>
+            </div>
+            <Link
+              href="/gui-nha-ban"
+              className="primary-btn shrink-0 !px-6 !py-3 !text-[15px]"
+            >
+              Đăng nhà cần bán →
+            </Link>
+          </div>
+        </div>
       </section>
     </SiteShell>
   );

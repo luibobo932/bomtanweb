@@ -20,7 +20,7 @@ export function VideoCard({ video, featured = false }: { video: VideoItem; featu
       <div className={`video-stage ${featured ? "xl:min-h-[620px]" : "min-h-[420px]"}`}>
         <div className="absolute left-5 right-5 top-5 z-10 flex items-center justify-between">
           <div className="dark-pill text-xs font-bold uppercase tracking-[0.18em]">
-            {video.contentType === "review_nha" ? "Review nha" : "Kien thuc"}
+            {video.contentType === "review_nha" ? "Review nhà" : "Kiến thức"}
           </div>
           <div className="dark-pill text-sm font-bold">{formatDuration(video.durationSeconds)}</div>
         </div>
@@ -60,24 +60,24 @@ export function VideoCard({ video, featured = false }: { video: VideoItem; featu
           </div>
 
           <div className="mt-6 rounded-[24px] border border-zinc-800 bg-zinc-950 p-5">
-            <div className="section-kicker">Nguon video</div>
+            <div className="section-kicker">Nguồn video</div>
             <div className="mt-3 text-xl font-black text-white">{sourceLabel[video.videoSourceType]}</div>
             <p className="mt-3 text-sm leading-7 text-zinc-400">
-              Website chi luu `video_url` va `embed_code`, sau do nhung video de xem truc tiep
-              tren web ma khong can luu file lon tren app server.
+              Video được nhúng trực tiếp từ {sourceLabel[video.videoSourceType]} — xem mượt mà
+              mà không cần lưu file lớn trên server.
             </p>
           </div>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <div className="rounded-[22px] border border-zinc-800 bg-zinc-950 p-4">
-              <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">CTA chinh</div>
+              <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">Bước tiếp theo</div>
               <div className="mt-2 font-semibold text-white">
-                Xem ho so can nha va bam Zalo ngay
+                Xem hồ sơ căn nhà và liên hệ Zalo ngay
               </div>
             </div>
             <div className="rounded-[22px] border border-zinc-800 bg-zinc-950 p-4">
-              <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">Lead source</div>
-              <div className="mt-2 font-semibold text-white">Video / listing / profile</div>
+              <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">Nguồn lead</div>
+              <div className="mt-2 font-semibold text-white">Video · Listing · Profile</div>
             </div>
           </div>
         </div>
@@ -85,15 +85,15 @@ export function VideoCard({ video, featured = false }: { video: VideoItem; featu
         <div className="flex flex-wrap gap-3">
           {video.listingSlug ? (
             <Link href={`/nha-ban/${video.listingSlug}`} className="primary-btn">
-              Xem ho so can nha
+              Xem hồ sơ căn nhà
             </Link>
           ) : (
             <a href={video.videoUrl} target="_blank" rel="noreferrer" className="primary-btn">
-              Mo video nguon
+              Mở video gốc
             </a>
           )}
           <Link href={`/doi-ngu/${video.reviewerSlug}`} className="secondary-btn">
-            Xem profile
+            Xem profile chuyên gia
           </Link>
         </div>
       </div>

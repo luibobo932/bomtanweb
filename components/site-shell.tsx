@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
+import { SiteFooter } from "@/components/site-footer";
 
 const navItems = [
   { href: "/", label: "Trang chủ" },
@@ -155,6 +156,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
       </div>
 
       <main>{children}</main>
+      <SiteFooter />
     </div>
   );
 }
