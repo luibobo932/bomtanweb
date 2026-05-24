@@ -290,3 +290,69 @@ textarea {
 .animate-like {
   animation: likePopup 0.3s ease-out;
 }
+
+/* Micro-animations */
+.primary-btn {
+  transition: background 0.15s ease, transform 0.12s ease, opacity 0.15s ease;
+}
+.primary-btn:hover {
+  background: var(--brand-deep);
+  transform: translateY(-1px);
+}
+.primary-btn:active {
+  transform: translateY(0);
+}
+
+.secondary-btn {
+  transition: border-color 0.15s ease, color 0.15s ease, transform 0.12s ease;
+}
+.secondary-btn:hover {
+  border-color: var(--brand);
+  color: white;
+  transform: translateY(-1px);
+}
+.secondary-btn:active {
+  transform: translateY(0);
+}
+
+.see-all-link {
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.see-all-link:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+/* Card lift on hover */
+.glass-card {
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+.glass-card:hover {
+  border-color: #3e3e38;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.home-video-card {
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.home-video-card:hover {
+  border-color: var(--brand);
+  transform: translateY(-2px);
+}
+
+/* Page fade-in */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+main {
+  animation: page-enter 0.3s ease forwards;
+}

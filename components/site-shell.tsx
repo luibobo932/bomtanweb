@@ -11,7 +11,7 @@ const navItems = [
   { href: "/feed", label: "Video" },
   { href: "/nha-ban", label: "Nhà bán" },
   { href: "/kien-thuc", label: "Kiến thức" },
-  { href: "/doi-ngu/minh-anh", label: "Chuyên gia" },
+  { href: "/doi-ngu", label: "Chuyên gia" },
   { href: "/gui-nhu-cau", label: "Tư vấn" },
 ];
 

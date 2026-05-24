@@ -56,7 +56,7 @@ export default async function AgentDetailPage({
         <div className="glass-card rounded-[34px] p-8 md:p-10">
           <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-3xl">
-              <div className="section-kicker">Profile ca nhan</div>
+              <div className="section-kicker">Hồ sơ chuyên gia</div>
               <h1 className="mt-3 text-4xl font-black tracking-tight md:text-6xl">
                 {agent.name}
               </h1>
@@ -73,7 +73,7 @@ export default async function AgentDetailPage({
 
             <div className="w-full max-w-md rounded-[30px] border border-[rgba(216,78,30,0.35)] bg-[linear-gradient(180deg,rgba(176,58,16,0.92),rgba(216,78,30,0.88))] p-6 text-white">
               <div className="text-xs font-bold uppercase tracking-[0.18em] text-white/70">
-                Lien he nhanh
+                Liên hệ nhanh
               </div>
               <div className="mt-4 space-y-3 text-sm">
                 <div>Zalo: {agent.zalo}</div>
@@ -85,7 +85,7 @@ export default async function AgentDetailPage({
                   href="/gui-nhu-cau"
                   className="secondary-btn border-white/20 bg-white/10 text-white"
                 >
-                  Gui nhu cau
+                  Gửi nhu cầu
                 </Link>
                 <Link href="/feed" className="secondary-btn border-white/20 bg-white/10 text-white">
                   Xem video
@@ -96,7 +96,7 @@ export default async function AgentDetailPage({
 
           <div className="mt-10 grid gap-6 lg:grid-cols-2">
             <div className="rounded-[28px] border border-zinc-800 bg-zinc-950 p-6">
-              <div className="section-kicker">Thanh tich</div>
+              <div className="section-kicker">Thành tích</div>
               <div className="mt-4 space-y-3 text-sm leading-7 text-zinc-300">
                 {agent.achievements.map((item) => (
                   <div key={item}>- {item}</div>
@@ -104,10 +104,10 @@ export default async function AgentDetailPage({
               </div>
             </div>
             <div className="rounded-[28px] border border-zinc-800 bg-zinc-950 p-6">
-              <div className="section-kicker">Vai tro trong he thong</div>
+              <div className="section-kicker">Vai trò trong hệ thống</div>
               <p className="mt-4 text-sm leading-7 text-zinc-300">
-                Nhan vien va cong tac vien duoc dang video va listing o trang thai cho duyet.
-                Super Admin la diem kiem soat cuoi cung cho noi dung, lead va user.
+                Nhân viên và cộng tác viên được đăng video và listing ở trạng thái chờ duyệt.
+                Super Admin là điểm kiểm soát cuối cùng cho nội dung, lead và user.
               </p>
             </div>
           </div>
@@ -116,7 +116,7 @@ export default async function AgentDetailPage({
 
       <section className="container-shell mt-16 grid gap-6 lg:grid-cols-2">
         <div className="glass-card rounded-[30px] p-6">
-          <div className="section-kicker">Video da dang</div>
+          <div className="section-kicker">Video đã đăng</div>
           <div className="mt-4 space-y-4">
             {ownVideos.map((video) => (
               <div key={video.id} className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
@@ -127,7 +127,7 @@ export default async function AgentDetailPage({
           </div>
         </div>
         <div className="glass-card rounded-[30px] p-6">
-          <div className="section-kicker">Listing dang phu trach</div>
+          <div className="section-kicker">Listing đang phụ trách</div>
           <div className="mt-4 space-y-4">
             {ownListings.map((listing) => (
               <div key={listing.id} className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">

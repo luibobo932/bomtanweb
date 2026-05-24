@@ -2,9 +2,9 @@ import Link from "next/link";
 import type { AgentProfile } from "@/data/mock-data";
 
 const roleMap: Record<AgentProfile["role"], string> = {
-  super_admin: "Super Admin",
-  nhan_vien: "Nhan vien",
-  cong_tac_vien: "Cong tac vien",
+  super_admin: "Trưởng nhóm",
+  nhan_vien: "Nhân viên",
+  cong_tac_vien: "Cộng tác viên",
 };
 
 export function AgentCard({ agent }: { agent: AgentProfile }) {
@@ -33,7 +33,7 @@ export function AgentCard({ agent }: { agent: AgentProfile }) {
       </div>
 
       <div className="mt-5 rounded-[24px] bg-zinc-900 p-5 text-sm">
-        <div className="section-kicker">Phan khuc chuyen</div>
+        <div className="section-kicker">Phân khúc chuyên môn</div>
         <div className="mt-3 text-lg font-black text-white">{agent.specialtySegment}</div>
       </div>
 
