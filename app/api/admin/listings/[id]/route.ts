@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth";
 import { updateListingStatus } from "@/lib/listing-repository";
+import { updateListingSchema } from "@/lib/validation";
 
 export async function PATCH(
   request: Request,
@@ -12,19 +13,18 @@ export async function PATCH(
       return NextResponse.json({ error: "Can dang nhap admin." }, { status: 401 });
     }
 
+    const body = await request.json();
+    const result = updateListingSchema.safeParse(body);
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error.issues[0].message },
+        { status: 422 },
+      );
+    }
+
     const { id } = await params;
-    const body = (await request.json()) as Record<string, unknown>;
-    const listing = await updateListingStatus({
-      id,
-      status: String(body.status ?? "con_ban") as
-        | "con_ban"
-        | "dang_thuong_luong"
-        | "da_ban"
-        | "ngung_ban",
-      approvalStatus: body.approvalStatus
-        ? (String(body.approvalStatus) as "pending" | "approved" | "rejected")
-        : undefined,
-    });
+    const listing = await updateListingStatus({ id, ...result.data });
 
     return NextResponse.json({ listing });
   } catch (error) {

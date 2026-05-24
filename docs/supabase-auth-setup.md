@@ -19,6 +19,12 @@
    - row trong `profiles`, hoac
    - `app_metadata.role = super_admin`
 
+## Ghi chu cho repo nay
+
+- Repo da ho tro ca `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` va `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+- Seed mau van hanh nam o `supabase/seed/20260524_seed_bomtanweb.sql`.
+- Hien project `bomtanweb` da co schema + seed, nhung van can 1 auth user that de dang nhap `/admin/login`.
+
 ## Hanh vi trong app
 
 - `/admin/login`: dang nhap bang Supabase

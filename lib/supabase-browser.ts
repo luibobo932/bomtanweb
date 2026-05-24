@@ -1,21 +1,19 @@
 "use client";
 
 import { createBrowserClient } from "@supabase/ssr";
+import { getSupabasePublishableKey, getSupabaseUrl, hasSupabasePublicEnv } from "@/lib/supabase-env";
 
 let browserClientSingleton: ReturnType<typeof createBrowserClient> | null = null;
 
 export function getSupabaseBrowserClient() {
-  if (
-    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  ) {
+  if (!hasSupabasePublicEnv()) {
     return null;
   }
 
   if (!browserClientSingleton) {
     browserClientSingleton = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      getSupabaseUrl(),
+      getSupabasePublishableKey(),
     );
   }
 

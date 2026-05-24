@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth";
 import { createAdminListing, getAllListings } from "@/lib/listing-repository";
+import { createListingSchema } from "@/lib/validation";
 
 export async function GET() {
   try {
@@ -26,43 +27,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Can dang nhap admin." }, { status: 401 });
     }
 
-    const body = (await request.json()) as Record<string, unknown>;
+    const body = await request.json();
+    const result = createListingSchema.safeParse(body);
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error.issues[0].message },
+        { status: 422 },
+      );
+    }
+
+    const data = result.data;
+    const advantages = Array.isArray(data.advantages)
+      ? data.advantages.map(String)
+      : String(data.advantages).split("\n").map((s) => s.trim()).filter(Boolean);
+    const suitableFor = Array.isArray(data.suitableFor)
+      ? data.suitableFor.map(String)
+      : String(data.suitableFor).split(",").map((s) => s.trim()).filter(Boolean);
+
     const listing = await createAdminListing({
-      title: String(body.title ?? ""),
-      district: String(body.district ?? ""),
-      ward: String(body.ward ?? ""),
-      street: String(body.street ?? ""),
-      addressLine: String(body.addressLine ?? ""),
-      priceLabel: String(body.priceLabel ?? ""),
-      areaLabel: String(body.areaLabel ?? ""),
-      dimensions: String(body.dimensions ?? ""),
-      layout: String(body.layout ?? ""),
-      houseType: String(body.houseType ?? ""),
-      legal: String(body.legal ?? ""),
-      occupancy: String(body.occupancy ?? ""),
-      status: String(body.status ?? "con_ban") as
-        | "con_ban"
-        | "dang_thuong_luong"
-        | "da_ban"
-        | "ngung_ban",
-      advantages: Array.isArray(body.advantages)
-        ? body.advantages.map((item) => String(item))
-        : String(body.advantages ?? "")
-            .split("\n")
-            .map((item) => item.trim())
-            .filter(Boolean),
-      caution: String(body.caution ?? ""),
-      suitableFor: Array.isArray(body.suitableFor)
-        ? body.suitableFor.map((item) => String(item))
-        : String(body.suitableFor ?? "")
-            .split(",")
-            .map((item) => item.trim())
-            .filter(Boolean),
-      managerSlug: String(body.managerSlug ?? ""),
-      managerName: String(body.managerName ?? ""),
-      heroNote: String(body.heroNote ?? ""),
+      ...data,
+      advantages,
+      suitableFor,
       approvalStatus: session.role === "super_admin" ? "approved" : "pending",
-      managerProfileId: String(body.managerProfileId ?? body.managerSlug ?? ""),
+      managerProfileId: data.managerProfileId || data.managerSlug,
       role: session.role,
     });
 

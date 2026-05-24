@@ -6,7 +6,41 @@ type CreateListingParams = Omit<ListingItem, "id" | "slug"> & {
   role: UserRole;
 };
 
-const runtimeListings: ListingItem[] = [...listings];
+const runtimeListings: ListingItem[] = process.env.NODE_ENV !== "production" ? [...listings] : [];
+
+async function resolveManagerProfile(managerProfileId: string, managerSlug: string, managerName: string) {
+  if (!hasSupabaseEnv()) {
+    return {
+      managerProfileId,
+      managerSlug,
+      managerName,
+    };
+  }
+
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase!
+    .from("profiles")
+    .select("id, slug, full_name")
+    .or(`id.eq.${managerProfileId},slug.eq.${managerSlug}`)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Khong doc duoc manager profile: ${error.message}`);
+  }
+
+  if (!data) {
+    throw new Error("Manager profile khong ton tai hoac da ngung hoat dong.");
+  }
+
+  const profile = data as Record<string, unknown>;
+
+  return {
+    managerProfileId: String(profile.id),
+    managerSlug: String(profile.slug ?? managerSlug),
+    managerName: String(profile.full_name ?? managerName),
+  };
+}
 
 function slugify(value: string) {
   return value
@@ -153,11 +187,17 @@ export async function getListingsByManager(slug: string) {
 }
 
 export async function createAdminListing(params: CreateListingParams) {
+  const manager = await resolveManagerProfile(
+    params.managerProfileId,
+    params.managerSlug,
+    params.managerName,
+  );
   const listing: ListingItem = {
     ...params,
     id: `L-${Date.now()}`,
     slug: slugify(params.title),
-    managerName: params.managerName,
+    managerSlug: manager.managerSlug,
+    managerName: manager.managerName,
     approvalStatus: params.role === "super_admin" ? "approved" : "pending",
   };
 
@@ -165,7 +205,7 @@ export async function createAdminListing(params: CreateListingParams) {
     const supabase = getSupabaseClient();
     const { data, error } = await supabase!
       .from("listings")
-      .insert(normalizeListingForSupabase(listing, params.managerProfileId) as never)
+      .insert(normalizeListingForSupabase(listing, manager.managerProfileId) as never)
       .select()
       .single();
 

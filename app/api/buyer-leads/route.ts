@@ -1,32 +1,27 @@
 import { NextResponse } from "next/server";
+import { sendBuyerLeadNotification } from "@/lib/email";
 import { createBuyerLead } from "@/lib/lead-repository";
+import { buyerLeadSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as Record<string, unknown>;
+    const body = await request.json();
+    const result = buyerLeadSchema.safeParse(body);
 
-    const lead = await createBuyerLead({
-      fullName: String(body.fullName ?? "").trim(),
-      phone: String(body.phone ?? "").trim(),
-      preferredDistrict: String(body.preferredDistrict ?? "").trim(),
-      budgetLabel: String(body.budgetLabel ?? "").trim(),
-      houseType: String(body.houseType ?? "").trim(),
-      dimensionsRequest: String(body.dimensionsRequest ?? "").trim(),
-      purpose: String(body.purpose ?? "").trim(),
-      notes: String(body.notes ?? "").trim(),
-      sourceType: String(body.sourceType ?? "direct") as
-        | "video"
-        | "listing"
-        | "profile"
-        | "kien_thuc"
-        | "direct",
-      sourceId: body.sourceId ? String(body.sourceId) : undefined,
-    });
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error.issues[0].message },
+        { status: 422 },
+      );
+    }
 
+    const lead = await createBuyerLead(result.data);
+    // Fire-and-forget: không block response nếu email lỗi
+    sendBuyerLeadNotification(lead).catch(console.error);
     return NextResponse.json({ lead }, { status: 201 });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Khong tao duoc buyer lead." },
+      { error: error instanceof Error ? error.message : "Khong tao duoc yeu cau." },
       { status: 400 },
     );
   }

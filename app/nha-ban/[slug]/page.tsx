@@ -1,9 +1,46 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ListingCard } from "@/components/listing-card";
 import { SiteShell } from "@/components/site-shell";
 import { getListingBySlug, getPublicListings } from "@/lib/listing-repository";
 import { getPublicVideos } from "@/lib/video-repository";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const listing = await getListingBySlug(slug);
+  if (!listing) return {};
+
+  const title = `${listing.title} — ${listing.district} | ${listing.priceLabel}`;
+  const description = [
+    listing.heroNote,
+    `Diện tích: ${listing.dimensions}.`,
+    listing.advantages.slice(0, 2).join(". "),
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://nhaphosg.com";
+  const url = `${siteUrl}/nha-ban/${slug}`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      type: "article",
+      url,
+      title,
+      description,
+      images: [{ url: "/og-default.jpg", width: 1200, height: 630, alt: listing.title }],
+    },
+    twitter: { card: "summary_large_image", title, description },
+    alternates: { canonical: url },
+  };
+}
 
 export default async function ListingDetailPage({
   params,

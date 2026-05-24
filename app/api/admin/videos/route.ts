@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth";
 import { createAdminVideo, getAllVideos } from "@/lib/video-repository";
+import { createVideoSchema } from "@/lib/validation";
 
 export async function GET() {
   try {
@@ -12,9 +13,10 @@ export async function GET() {
     const videos = await getAllVideos();
     return NextResponse.json({ videos, session });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Khong doc duoc danh sach video.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Khong doc duoc danh sach video." },
+      { status: 500 },
+    );
   }
 }
 
@@ -25,30 +27,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Can dang nhap admin." }, { status: 401 });
     }
 
-    const body = (await request.json()) as Record<string, unknown>;
+    const body = await request.json();
+    const result = createVideoSchema.safeParse(body);
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error.issues[0].message },
+        { status: 422 },
+      );
+    }
+
     const created = await createAdminVideo({
-      title: String(body.title ?? ""),
-      summary: String(body.summary ?? ""),
-      videoUrl: String(body.videoUrl ?? ""),
-      embedCode: body.embedCode ? String(body.embedCode) : undefined,
-      thumbnailUrl: body.thumbnailUrl ? String(body.thumbnailUrl) : undefined,
-      durationSeconds: Number(body.durationSeconds ?? 0),
-      reviewerProfileId: String(body.reviewerProfileId ?? ""),
-      districtTag: String(body.districtTag ?? ""),
-      streetTag: String(body.streetTag ?? ""),
-      priceTag: String(body.priceTag ?? ""),
-      houseTypeTag: String(body.houseTypeTag ?? ""),
-      contentType:
-        body.contentType === "kien_thuc" ? "kien_thuc" : "review_nha",
-      listingId: body.listingId ? String(body.listingId) : undefined,
+      ...result.data,
       role: session.role,
       actorUserId: session.userId,
     });
 
     return NextResponse.json({ video: created }, { status: 201 });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Khong tao duoc video metadata.";
-    return NextResponse.json({ error: message }, { status: 400 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Khong tao duoc video metadata." },
+      { status: 400 },
+    );
   }
 }

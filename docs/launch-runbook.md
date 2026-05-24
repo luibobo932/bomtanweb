@@ -2,17 +2,17 @@
 
 ## 1. Supabase production
 
-1. Tao project production.
+1. Tao hoac dung project production da link.
 2. Chay migration trong `supabase/migrations/20260524_create_videos_metadata.sql`.
-3. Bat Email auth provider.
-4. Tao `super_admin` dau tien va row `profiles`.
-5. Nap du lieu khoi tao cho `profiles`, `listings`, `videos`.
+3. Nap du lieu khoi tao trong `supabase/seed/20260524_seed_bomtanweb.sql`.
+4. Bat Email auth provider.
+5. Tao `super_admin` dau tien va row `profiles`.
 
 ## 2. Env production
 
 - `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` hoac `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SECRET_KEY` hoac `SUPABASE_SERVICE_ROLE_KEY`
 - `NEXT_PUBLIC_SITE_URL`
 
 ## 3. Vercel
@@ -31,9 +31,9 @@
 
 ## 4. Seed du lieu toi thieu
 
-- 3-5 profiles dang active
-- 10-20 listings approved
-- 10-20 videos approved
+- 5 profiles dang active
+- 10 listings approved
+- 10 videos approved
 - it nhat 1 listing co video gan kem
 
 ## 5. Kiem tra sau launch

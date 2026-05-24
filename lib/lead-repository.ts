@@ -9,8 +9,8 @@ import {
 } from "@/data/mock-data";
 import { getSupabaseClient, hasSupabaseEnv } from "@/lib/supabase";
 
-const runtimeBuyerLeads: BuyerLeadItem[] = [...buyerLeads];
-const runtimeOwnerLeads: OwnerLeadItem[] = [...ownerLeads];
+const runtimeBuyerLeads: BuyerLeadItem[] = process.env.NODE_ENV !== "production" ? [...buyerLeads] : [];
+const runtimeOwnerLeads: OwnerLeadItem[] = process.env.NODE_ENV !== "production" ? [...ownerLeads] : [];
 
 type CreateBuyerLeadParams = Omit<
   BuyerLeadItem,
@@ -72,7 +72,7 @@ export async function createBuyerLead(params: CreateBuyerLeadParams) {
 
   if (hasSupabaseEnv()) {
     const supabase = getSupabaseClient();
-    const { data, error } = await supabase!
+    const { error } = await supabase!
       .from("buyer_leads")
       .insert({
         id: lead.id,
@@ -87,15 +87,13 @@ export async function createBuyerLead(params: CreateBuyerLeadParams) {
         source_type: lead.sourceType,
         source_id: lead.sourceId ?? null,
         status: lead.status,
-      } as never)
-      .select()
-      .single();
+      } as never);
 
     if (error) {
       throw new Error(`Khong tao duoc buyer lead: ${error.message}`);
     }
 
-    return mapBuyerLeadRow(data);
+    return lead;
   }
 
   runtimeBuyerLeads.unshift(lead);
@@ -112,7 +110,7 @@ export async function createOwnerLead(params: CreateOwnerLeadParams) {
 
   if (hasSupabaseEnv()) {
     const supabase = getSupabaseClient();
-    const { data, error } = await supabase!
+    const { error } = await supabase!
       .from("owner_leads")
       .insert({
         id: lead.id,
@@ -128,15 +126,13 @@ export async function createOwnerLead(params: CreateOwnerLeadParams) {
         source_type: lead.sourceType,
         source_id: lead.sourceId ?? null,
         status: lead.status,
-      } as never)
-      .select()
-      .single();
+      } as never);
 
     if (error) {
       throw new Error(`Khong tao duoc owner lead: ${error.message}`);
     }
 
-    return mapOwnerLeadRow(data);
+    return lead;
   }
 
   runtimeOwnerLeads.unshift(lead);

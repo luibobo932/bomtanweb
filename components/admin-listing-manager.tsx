@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { agents, type ListingItem, type UserRole } from "@/data/mock-data";
+import { type AgentProfile, type ListingItem, type UserRole } from "@/data/mock-data";
 import type { AdminSession } from "@/lib/auth";
 
 type FormState = {
@@ -50,9 +50,11 @@ const emptyForm: FormState = {
 
 export function AdminListingManager({
   initialListings,
+  profiles,
   session,
 }: {
   initialListings: ListingItem[];
+  profiles: AgentProfile[];
   session: AdminSession;
 }) {
   const [role] = useState<UserRole>(session.role);
@@ -145,12 +147,12 @@ export function AdminListingManager({
             className="field"
             value={form.managerSlug}
             onChange={(e) => {
-              const agent = agents.find((item) => item.slug === e.target.value);
+              const agent = profiles.find((item) => item.slug === e.target.value);
               updateField("managerSlug", e.target.value);
               updateField("managerName", agent?.name ?? "");
             }}
           >
-            {agents.map((agent) => (
+            {profiles.map((agent) => (
               <option key={agent.slug} value={agent.slug}>
                 {agent.name}
               </option>

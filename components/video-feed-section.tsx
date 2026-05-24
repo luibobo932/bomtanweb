@@ -147,8 +147,11 @@ function FeedCard({ video }: { video: VideoItem }) {
   );
 }
 
+const PAGE_SIZE = 6;
+
 export function VideoFeedSection({ videos }: { videos: VideoItem[] }) {
   const [activeFilter, setActiveFilter] = useState("Tất cả");
+  const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
@@ -169,7 +172,10 @@ export function VideoFeedSection({ videos }: { videos: VideoItem[] }) {
     [activeFilter, videos],
   );
 
-  const resetFilter = () => setActiveFilter("Tất cả");
+  const visibleVideos = filteredVideos.slice(0, page * PAGE_SIZE);
+  const hasMore = visibleVideos.length < filteredVideos.length;
+
+  const resetFilter = () => { setActiveFilter("Tất cả"); setPage(1); };
 
   return (
     <>
@@ -217,11 +223,21 @@ export function VideoFeedSection({ videos }: { videos: VideoItem[] }) {
             </button>
           </div>
         ) : (
-          <div className="grid gap-4">
-            {filteredVideos.map((video) => (
-              <FeedCard key={video.id} video={video} />
-            ))}
-          </div>
+          <>
+            <div className="grid gap-4">
+              {visibleVideos.map((video) => (
+                <FeedCard key={video.id} video={video} />
+              ))}
+            </div>
+            {hasMore && (
+              <button
+                onClick={() => setPage((p) => p + 1)}
+                className="mx-auto mt-6 flex items-center gap-2 rounded-2xl border border-zinc-700 bg-zinc-900 px-6 py-3 text-sm font-semibold text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Xem thêm {Math.min(PAGE_SIZE, filteredVideos.length - visibleVideos.length)} video ↓
+              </button>
+            )}
+          </>
         )}
       </section>
 

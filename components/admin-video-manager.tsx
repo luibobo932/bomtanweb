@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { agents, listings, type UserRole, type VideoItem } from "@/data/mock-data";
+import { type AgentProfile, type ListingItem, type UserRole, type VideoItem } from "@/data/mock-data";
 import type { AdminSession } from "@/lib/auth";
 
 type FormState = {
@@ -38,9 +38,13 @@ const emptyForm: FormState = {
 
 export function AdminVideoManager({
   initialVideos,
+  availableListings,
+  profiles,
   session,
 }: {
   initialVideos: VideoItem[];
+  availableListings: ListingItem[];
+  profiles: AgentProfile[];
   session: AdminSession;
 }) {
   const [role] = useState<UserRole>(session.role);
@@ -206,7 +210,7 @@ export function AdminVideoManager({
             value={form.reviewerProfileId}
             onChange={(event) => updateField("reviewerProfileId", event.target.value)}
           >
-            {agents.map((agent) => (
+            {profiles.map((agent) => (
               <option key={agent.slug} value={agent.slug}>
                 {agent.name}
               </option>
@@ -218,7 +222,7 @@ export function AdminVideoManager({
             onChange={(event) => updateField("listingId", event.target.value)}
           >
             <option value="">Khong gan listing</option>
-            {listings.map((listing) => (
+            {availableListings.map((listing) => (
               <option key={listing.id} value={listing.id}>
                 {listing.id} - {listing.title}
               </option>

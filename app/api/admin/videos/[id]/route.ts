@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth";
 import { updateVideoApprovalStatus } from "@/lib/video-repository";
+import { updateVideoStatusSchema } from "@/lib/validation";
 
 export async function PATCH(
   request: NextRequest,
@@ -12,24 +13,29 @@ export async function PATCH(
       return NextResponse.json({ error: "Can dang nhap admin." }, { status: 401 });
     }
 
-    const body = (await request.json()) as Record<string, unknown>;
-    const { id } = await params;
-    const approvalStatus =
-      body.approvalStatus === "approved" || body.approvalStatus === "rejected"
-        ? body.approvalStatus
-        : "pending";
+    const body = await request.json();
+    const result = updateVideoStatusSchema.safeParse(body);
 
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error.issues[0].message },
+        { status: 422 },
+      );
+    }
+
+    const { id } = await params;
     const video = await updateVideoApprovalStatus({
       id,
-      approvalStatus,
+      approvalStatus: result.data.approvalStatus,
       role: session.role,
       actorUserId: session.userId,
     });
 
     return NextResponse.json({ video });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Khong cap nhat duoc video.";
-    return NextResponse.json({ error: message }, { status: 400 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Khong cap nhat duoc video." },
+      { status: 400 },
+    );
   }
 }

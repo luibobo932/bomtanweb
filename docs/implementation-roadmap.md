@@ -26,3 +26,21 @@
 2. Audit log
 3. Dashboard KPI co ban
 4. Upload video / thumbnail / gallery
+
+## Phase 4 - Knowledge Hub (Chien luoc tang traffic giai doan dau)
+
+Xem chi tiet: docs/vision.md
+
+1. Schema DB: bang `articles` + bang `influencers`
+2. Trang /kien-thuc danh sach bai theo category
+3. Trang /kien-thuc/[slug] chi tiet bai viet + related listings tu dong
+4. Mo rong trang /doi-ngu/[slug] them phan noi dung tu chuyen gia
+5. Admin CRUD articles + gan influencer
+
+## Phase 5 - Engagement & Growth
+
+1. Follow topics / influencers (localStorage -> Supabase)
+2. Email digest hang tuan
+3. Search toan bo noi dung
+4. Related content ("ban doc bai nay cung xem...")
+5. Structured data Schema.org cho SEO organic

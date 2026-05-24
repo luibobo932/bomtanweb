@@ -37,7 +37,8 @@ type UpdateVideoStatusParams = {
   actorUserId?: string;
 };
 
-const runtimeVideos: VideoItem[] = [...seedVideos];
+// Chỉ dùng trong dev khi chưa có Supabase env. Trên serverless production sẽ reset mỗi invocation.
+const runtimeVideos: VideoItem[] = process.env.NODE_ENV !== "production" ? [...seedVideos] : [];
 
 async function writeAuditLog(params: {
   actorUserId?: string;
@@ -70,8 +71,35 @@ function enrichReviewer(reviewerProfileId: string) {
   }
 
   return {
+    reviewerProfileId: agent.slug,
     reviewerSlug: agent.slug,
     reviewerName: agent.name,
+  };
+}
+
+async function enrichReviewerFromSupabase(reviewerProfileId: string) {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase!
+    .from("profiles")
+    .select("id, slug, full_name")
+    .or(`id.eq.${reviewerProfileId},slug.eq.${reviewerProfileId}`)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Khong doc duoc reviewer profile: ${error.message}`);
+  }
+
+  if (!data) {
+    throw new Error("reviewer_profile_id khong ton tai trong profiles.");
+  }
+
+  const profile = data as Record<string, unknown>;
+
+  return {
+    reviewerProfileId: String(profile.id),
+    reviewerSlug: String(profile.slug ?? ""),
+    reviewerName: String(profile.full_name ?? ""),
   };
 }
 
@@ -91,6 +119,37 @@ function resolveListing(listingId?: string | null) {
   return {
     listingId: listing.id,
     listingSlug: listing.slug,
+  };
+}
+
+async function resolveListingFromSupabase(listingId?: string | null) {
+  if (!listingId) {
+    return {
+      listingId: undefined,
+      listingSlug: undefined,
+    };
+  }
+
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase!
+    .from("listings")
+    .select("id, slug")
+    .eq("id", listingId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Khong doc duoc listing lien ket: ${error.message}`);
+  }
+
+  if (!data) {
+    throw new Error("listing_id khong ton tai trong danh sach that.");
+  }
+
+  const listing = data as Record<string, unknown>;
+
+  return {
+    listingId: String(listing.id),
+    listingSlug: String(listing.slug ?? ""),
   };
 }
 
@@ -132,8 +191,12 @@ export async function getAllVideos() {
 }
 
 export async function createAdminVideo(params: CreateVideoParams) {
-  const reviewer = enrichReviewer(params.reviewerProfileId);
-  const listing = resolveListing(params.listingId);
+  const reviewer = hasSupabaseEnv()
+    ? await enrichReviewerFromSupabase(params.reviewerProfileId)
+    : enrichReviewer(params.reviewerProfileId);
+  const listing = hasSupabaseEnv()
+    ? await resolveListingFromSupabase(params.listingId)
+    : resolveListing(params.listingId);
 
   const video = createVideoRecord({
     title: params.title,
@@ -142,7 +205,7 @@ export async function createAdminVideo(params: CreateVideoParams) {
     embedCode: params.embedCode,
     thumbnailUrl: params.thumbnailUrl,
     durationSeconds: params.durationSeconds,
-    reviewerProfileId: params.reviewerProfileId,
+    reviewerProfileId: reviewer.reviewerProfileId,
     reviewerSlug: reviewer.reviewerSlug,
     reviewerName: reviewer.reviewerName,
     districtTag: params.districtTag,

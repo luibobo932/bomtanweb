@@ -34,8 +34,8 @@ export function AdminAuthPanel({ session }: { session: AdminSession }) {
       </div>
       <p className="mt-4 text-sm leading-7 text-[var(--muted)]">
         {session.mode === "demo"
-          ? "Chua cap env Supabase, nen admin dang chay fallback local de doi IT demo flow."
-          : "Dang dung session Supabase that. API admin se doc role tu session thay vi header demo."}
+          ? "Chua du env Supabase tren may nay, nen admin dang chay fallback local de xem giao dien va flow."
+          : "Dang dung session Supabase that. API admin dang doc role tu session va profiles thay vi mock header."}
       </p>
       {session.mode === "authenticated" ? (
         <button

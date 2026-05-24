@@ -1,28 +1,26 @@
 import { NextResponse } from "next/server";
+import { sendOwnerLeadNotification } from "@/lib/email";
 import { createOwnerLead } from "@/lib/lead-repository";
+import { ownerLeadSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as Record<string, unknown>;
+    const body = await request.json();
+    const result = ownerLeadSchema.safeParse(body);
 
-    const lead = await createOwnerLead({
-      ownerName: String(body.ownerName ?? "").trim(),
-      phone: String(body.phone ?? "").trim(),
-      addressLine: String(body.addressLine ?? "").trim(),
-      expectedPrice: String(body.expectedPrice ?? "").trim(),
-      dimensionsText: String(body.dimensionsText ?? "").trim(),
-      layoutText: String(body.layoutText ?? "").trim(),
-      legalStatus: String(body.legalStatus ?? "").trim(),
-      occupancyStatus: String(body.occupancyStatus ?? "").trim(),
-      mediaNotes: String(body.mediaNotes ?? "").trim(),
-      sourceType: "direct",
-      sourceId: undefined,
-    });
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error.issues[0].message },
+        { status: 422 },
+      );
+    }
 
+    const lead = await createOwnerLead({ ...result.data, sourceType: "direct" });
+    sendOwnerLeadNotification(lead).catch(console.error);
     return NextResponse.json({ lead }, { status: 201 });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Khong tao duoc owner lead." },
+      { error: error instanceof Error ? error.message : "Khong tao duoc yeu cau." },
       { status: 400 },
     );
   }

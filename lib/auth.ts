@@ -43,6 +43,11 @@ function readRoleFromUser(user: User) {
 export async function getAdminSession(): Promise<AdminSession | null> {
   const supabase = await getSupabaseServerClient();
   if (!supabase) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "NEXT_PUBLIC_SUPABASE_URL va NEXT_PUBLIC_SUPABASE_ANON_KEY chua duoc cau hinh. Admin bi khoa tren production.",
+      );
+    }
     return {
       mode: "demo",
       role: "super_admin",

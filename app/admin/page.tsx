@@ -1,16 +1,15 @@
-import Link from "next/link";
 import { AdminAuthPanel } from "@/components/admin-auth-panel";
-import { AdminLoginForm } from "@/components/admin-login-form";
 import { AdminLeadManager } from "@/components/admin-lead-manager";
 import { AdminListingManager } from "@/components/admin-listing-manager";
 import { AdminVideoManager } from "@/components/admin-video-manager";
 import { SectionHeading } from "@/components/section-heading";
 import { SiteShell } from "@/components/site-shell";
-import { adminHighlights } from "@/data/mock-data";
 import { getAdminSession } from "@/lib/auth";
 import { getBuyerLeads, getOwnerLeads } from "@/lib/lead-repository";
 import { getAllListings } from "@/lib/listing-repository";
+import { getAllProfiles } from "@/lib/profile-repository";
 import { getAllVideos } from "@/lib/video-repository";
+import { redirect } from "next/navigation";
 
 const modules = [
   {
@@ -51,34 +50,34 @@ export default async function AdminPage() {
   const session = await getAdminSession();
 
   if (!session) {
-    return (
-      <SiteShell>
-        <section className="container-shell pt-12">
-          <div className="mx-auto max-w-xl glass-card rounded-[34px] p-8 md:p-10">
-            <div className="section-kicker">Admin login</div>
-            <h1 className="mt-3 text-4xl font-black tracking-tight">Dang nhap khu quan tri</h1>
-            <p className="mt-4 text-base leading-7 text-[var(--muted)]">
-              Dang nhap bang Supabase Auth de tao video metadata, xem queue duyet va publish
-              neu role la `super_admin`.
-            </p>
-            <AdminLoginForm />
-            <div className="mt-6 text-sm text-[var(--muted)]">
-              Neu repo dang chay local chua co env, anh co the vao{" "}
-              <Link href="/admin" className="font-semibold text-[var(--brand)]">
-                /admin
-              </Link>{" "}
-              de xem fallback demo mode.
-            </div>
-          </div>
-        </section>
-      </SiteShell>
-    );
+    redirect("/admin/login");
   }
 
   const videos = await getAllVideos();
   const listings = await getAllListings();
+  const profiles = await getAllProfiles();
   const buyerLeads = await getBuyerLeads();
   const ownerLeads = await getOwnerLeads();
+  const adminHighlights = [
+    {
+      label: "Video cho duyet",
+      value: videos.filter((item) => item.approvalStatus === "pending").length,
+    },
+    {
+      label: "Listing cho duyet",
+      value: listings.filter((item) => (item.approvalStatus ?? "pending") === "pending").length,
+    },
+    {
+      label: "Lead moi chua phan",
+      value: [...buyerLeads, ...ownerLeads].filter(
+        (item) => item.status === "moi" && !item.assignedProfileId,
+      ).length,
+    },
+    {
+      label: "CTV dang hoat dong",
+      value: profiles.filter((item) => item.role === "cong_tac_vien").length,
+    },
+  ];
 
   return (
     <SiteShell>
@@ -115,15 +114,15 @@ export default async function AdminPage() {
       </section>
 
       <section className="container-shell">
-        <AdminListingManager initialListings={listings} session={session} />
+        <AdminListingManager initialListings={listings} profiles={profiles} session={session} />
       </section>
 
       <section className="container-shell">
-        <AdminVideoManager initialVideos={videos} session={session} />
+        <AdminVideoManager initialVideos={videos} availableListings={listings} profiles={profiles} session={session} />
       </section>
 
       <section className="container-shell">
-        <AdminLeadManager initialBuyerLeads={buyerLeads} initialOwnerLeads={ownerLeads} />
+        <AdminLeadManager initialBuyerLeads={buyerLeads} initialOwnerLeads={ownerLeads} profiles={profiles} />
       </section>
     </SiteShell>
   );

@@ -1,14 +1,16 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { agents, type BuyerLeadItem, type OwnerLeadItem } from "@/data/mock-data";
+import { type AgentProfile, type BuyerLeadItem, type OwnerLeadItem } from "@/data/mock-data";
 
 export function AdminLeadManager({
   initialBuyerLeads,
   initialOwnerLeads,
+  profiles,
 }: {
   initialBuyerLeads: BuyerLeadItem[];
   initialOwnerLeads: OwnerLeadItem[];
+  profiles: AgentProfile[];
 }) {
   const [buyerLeads, setBuyerLeads] = useState(initialBuyerLeads);
   const [ownerLeads, setOwnerLeads] = useState(initialOwnerLeads);
@@ -16,7 +18,7 @@ export function AdminLeadManager({
   const [isPending, startTransition] = useTransition();
 
   async function updateBuyer(id: string, status: BuyerLeadItem["status"], assignedProfileId: string) {
-    const agent = agents.find((item) => item.slug === assignedProfileId);
+    const agent = profiles.find((item) => item.slug === assignedProfileId);
     setMessage("");
     startTransition(async () => {
       try {
@@ -42,7 +44,7 @@ export function AdminLeadManager({
   }
 
   async function updateOwner(id: string, status: OwnerLeadItem["status"], assignedProfileId: string) {
-    const agent = agents.find((item) => item.slug === assignedProfileId);
+    const agent = profiles.find((item) => item.slug === assignedProfileId);
     setMessage("");
     startTransition(async () => {
       try {
@@ -91,7 +93,7 @@ export function AdminLeadManager({
                   <option value="huy">Hủy</option>
                 </select>
                 <select className="field" defaultValue={lead.assignedProfileId ?? "minh-anh"} onChange={(e) => updateBuyer(lead.id, lead.status, e.target.value)} disabled={isPending}>
-                  {agents.map((agent) => (
+                  {profiles.map((agent) => (
                     <option key={agent.slug} value={agent.slug}>
                       {agent.name}
                     </option>
@@ -123,7 +125,7 @@ export function AdminLeadManager({
                   <option value="da_chuyen_listing">Đã chuyển listing</option>
                 </select>
                 <select className="field" defaultValue={lead.assignedProfileId ?? "ngoc-han"} onChange={(e) => updateOwner(lead.id, lead.status, e.target.value)} disabled={isPending}>
-                  {agents.map((agent) => (
+                  {profiles.map((agent) => (
                     <option key={agent.slug} value={agent.slug}>
                       {agent.name}
                     </option>

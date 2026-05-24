@@ -1,7 +1,7 @@
 import { agents, type AgentProfile } from "@/data/mock-data";
 import { getSupabaseClient, hasSupabaseEnv } from "@/lib/supabase";
 
-const runtimeProfiles: AgentProfile[] = [...agents];
+const runtimeProfiles: AgentProfile[] = process.env.NODE_ENV !== "production" ? [...agents] : [];
 
 function mapProfileRow(row: Record<string, unknown>): AgentProfile {
   return {
@@ -34,6 +34,25 @@ export async function getPublicProfiles() {
 
     if (error) {
       throw new Error(`Khong doc duoc profiles tu Supabase: ${error.message}`);
+    }
+
+    return (data ?? []).map((row) => mapProfileRow(row));
+  }
+
+  return [...runtimeProfiles];
+}
+
+export async function getAllProfiles() {
+  if (hasSupabaseEnv()) {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase!
+      .from("profiles")
+      .select("*")
+      .eq("is_active", true)
+      .order("follow_count", { ascending: false });
+
+    if (error) {
+      throw new Error(`Khong doc duoc tat ca profiles: ${error.message}`);
     }
 
     return (data ?? []).map((row) => mapProfileRow(row));
