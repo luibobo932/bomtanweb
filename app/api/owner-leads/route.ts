@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     }
 
     const lead = await createOwnerLead({ ...result.data, sourceType: "direct" });
-    sendOwnerLeadNotification(lead).catch(console.error);
+    await sendOwnerLeadNotification(lead).catch(console.error);
     return NextResponse.json({ lead }, { status: 201 });
   } catch (error) {
     return NextResponse.json(
