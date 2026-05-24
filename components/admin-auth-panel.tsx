@@ -17,7 +17,7 @@ export function AdminAuthPanel({ session }: { session: AdminSession }) {
 
     startTransition(async () => {
       await supabase.auth.signOut();
-      router.push("/admin/login");
+      router.push("/admin");
       router.refresh();
     });
   }

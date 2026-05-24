@@ -46,7 +46,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="hidden items-center gap-2 md:flex">
-            <Link href="/admin/login" className="secondary-btn !px-3 !py-1.5 !text-[12px]">
+            <Link href="/admin" className="secondary-btn !px-3 !py-1.5 !text-[12px]">
               Đăng nhập
             </Link>
             <Link href="/gui-nha-ban" className="primary-btn !px-3 !py-1.5 !text-[12px]">
