@@ -7,7 +7,7 @@ const footerLinks = [
       { label: "Video review nhà", href: "/feed" },
       { label: "Nhà đang bán", href: "/nha-ban" },
       { label: "Kiến thức BDS", href: "/kien-thuc" },
-      { label: "Đội ngũ chuyên gia", href: "/doi-ngu/minh-anh" },
+      { label: "Đội ngũ chuyên gia", href: "/doi-ngu" },
     ],
   },
   {

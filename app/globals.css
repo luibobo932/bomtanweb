@@ -126,6 +126,17 @@ textarea {
   color: var(--muted);
 }
 
+.field:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(216, 78, 30, 0.15);
+}
+
+.field:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .primary-btn {
   display: inline-flex;
   align-items: center;
@@ -138,6 +149,18 @@ textarea {
   box-shadow: none;
 }
 
+.primary-btn:disabled,
+.primary-btn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.primary-btn:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+}
+
 .secondary-btn {
   display: inline-flex;
   align-items: center;
@@ -148,6 +171,18 @@ textarea {
   background: transparent;
   color: var(--foreground);
   font-weight: 500;
+}
+
+.secondary-btn:disabled,
+.secondary-btn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.secondary-btn:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
 }
 
 .dark-pill {

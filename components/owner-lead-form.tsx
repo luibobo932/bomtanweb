@@ -92,18 +92,25 @@ export function OwnerLeadForm() {
       </p>
 
       <form className="mt-8 grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
-        <input
-          required
-          className="field"
-          placeholder="Họ tên chủ nhà *"
-          value={form.ownerName}
-          onChange={(e) => updateField("ownerName", e.target.value)}
-        />
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="ownerName" className="text-xs font-medium text-zinc-400">Họ tên chủ nhà <span className="text-[var(--brand)]">*</span></label>
           <input
+            id="ownerName"
+            required
+            className="field"
+            placeholder="Nguyễn Văn A"
+            value={form.ownerName}
+            onChange={(e) => updateField("ownerName", e.target.value)}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="ownerPhone" className="text-xs font-medium text-zinc-400">Số điện thoại / Zalo <span className="text-[var(--brand)]">*</span></label>
+          <input
+            id="ownerPhone"
             required
             className={`field ${phoneError ? "border-red-500" : ""}`}
-            placeholder="Số điện thoại / Zalo *"
+            placeholder="0901 234 567"
             type="tel"
             value={form.phone}
             onChange={(e) => updateField("phone", e.target.value)}
@@ -111,13 +118,41 @@ export function OwnerLeadForm() {
           />
           {phoneError ? <p className="text-xs text-red-400">{phoneError}</p> : null}
         </div>
-        <input className="field md:col-span-2" placeholder="Địa chỉ nhà (số, đường, phường, quận)" value={form.addressLine} onChange={(e) => updateField("addressLine", e.target.value)} />
-        <input className="field" placeholder="Giá mong muốn (VD: 12 tỷ)" value={form.expectedPrice} onChange={(e) => updateField("expectedPrice", e.target.value)} />
-        <input className="field" placeholder="Diện tích ngang x dài (VD: 4x15m)" value={form.dimensionsText} onChange={(e) => updateField("dimensionsText", e.target.value)} />
-        <input className="field" placeholder="Kết cấu (VD: 1 trệt 3 lầu)" value={form.layoutText} onChange={(e) => updateField("layoutText", e.target.value)} />
-        <input className="field" placeholder="Pháp lý (sổ hồng, sổ đỏ...)" value={form.legalStatus} onChange={(e) => updateField("legalStatus", e.target.value)} />
-        <input className="field" placeholder="Tình trạng: đang ở / đang cho thuê" value={form.occupancyStatus} onChange={(e) => updateField("occupancyStatus", e.target.value)} />
-        <textarea className="field min-h-[120px] md:col-span-2" placeholder="Mô tả thêm, link hình/video nếu có" value={form.mediaNotes} onChange={(e) => updateField("mediaNotes", e.target.value)} />
+
+        <div className="flex flex-col gap-1.5 md:col-span-2">
+          <label htmlFor="addressLine" className="text-xs font-medium text-zinc-400">Địa chỉ nhà</label>
+          <input id="addressLine" className="field" placeholder="Số nhà, đường, phường, quận" value={form.addressLine} onChange={(e) => updateField("addressLine", e.target.value)} />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="expectedPrice" className="text-xs font-medium text-zinc-400">Giá mong muốn</label>
+          <input id="expectedPrice" className="field" placeholder="VD: 12 tỷ" value={form.expectedPrice} onChange={(e) => updateField("expectedPrice", e.target.value)} />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="dimensionsText" className="text-xs font-medium text-zinc-400">Diện tích</label>
+          <input id="dimensionsText" className="field" placeholder="VD: 4×15m" value={form.dimensionsText} onChange={(e) => updateField("dimensionsText", e.target.value)} />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="layoutText" className="text-xs font-medium text-zinc-400">Kết cấu</label>
+          <input id="layoutText" className="field" placeholder="VD: 1 trệt 3 lầu, 4 phòng ngủ" value={form.layoutText} onChange={(e) => updateField("layoutText", e.target.value)} />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="legalStatus" className="text-xs font-medium text-zinc-400">Pháp lý</label>
+          <input id="legalStatus" className="field" placeholder="Sổ hồng, sổ đỏ, giấy tay..." value={form.legalStatus} onChange={(e) => updateField("legalStatus", e.target.value)} />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="occupancyStatus" className="text-xs font-medium text-zinc-400">Tình trạng hiện tại</label>
+          <input id="occupancyStatus" className="field" placeholder="Đang ở / đang cho thuê / bỏ trống" value={form.occupancyStatus} onChange={(e) => updateField("occupancyStatus", e.target.value)} />
+        </div>
+
+        <div className="flex flex-col gap-1.5 md:col-span-2">
+          <label htmlFor="mediaNotes" className="text-xs font-medium text-zinc-400">Mô tả thêm</label>
+          <textarea id="mediaNotes" className="field min-h-[100px]" placeholder="Link hình ảnh, video, điểm đặc biệt của nhà..." value={form.mediaNotes} onChange={(e) => updateField("mediaNotes", e.target.value)} />
+        </div>
 
         <button type="submit" className="primary-btn md:col-span-2" disabled={isPending}>
           {isPending ? "Đang gửi..." : "Gửi thông tin nhà →"}

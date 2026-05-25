@@ -9,7 +9,7 @@ export function HomeVideoStrip({ videos }: { videos: VideoItem[] }) {
         <article key={video.id} className="home-video-card">
           <div className="home-video-thumb">
             <div className="absolute left-2 top-2 rounded-[4px] bg-[var(--brand)] px-2 py-0.5 text-[10px] font-semibold text-white">
-              {video.contentType === "review_nha" ? "Review" : "Kien thuc"}
+              {video.contentType === "review_nha" ? "Review" : "Kiến thức"}
             </div>
             <div className="absolute bottom-2 right-2 rounded-[3px] bg-black/70 px-1.5 py-0.5 text-[10px] text-white">
               {formatDuration(video.durationSeconds)}
@@ -39,7 +39,7 @@ export function HomeVideoStrip({ videos }: { videos: VideoItem[] }) {
                 href={video.listingSlug ? `/nha-ban/${video.listingSlug}` : "/feed"}
                 className="text-[11px] font-medium text-[var(--brand)]"
               >
-                Xem chi tiet →
+                Xem chi tiết →
               </Link>
             </div>
           </div>
