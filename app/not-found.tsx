@@ -19,13 +19,13 @@ export default function NotFound() {
           </p>
 
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link href="/" className="primary-btn !px-6 !py-3">
+            <Link href="/" className="primary-btn primary-btn--lg">
               Về trang chủ
             </Link>
-            <Link href="/nha-ban" className="secondary-btn !px-6 !py-3">
+            <Link href="/nha-ban" className="secondary-btn secondary-btn--lg">
               Xem nhà bán
             </Link>
-            <Link href="/feed" className="secondary-btn !px-6 !py-3">
+            <Link href="/feed" className="secondary-btn secondary-btn--lg">
               Xem video
             </Link>
           </div>

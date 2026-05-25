@@ -1,47 +1,61 @@
 import Link from "next/link";
 import type { AgentProfile } from "@/data/mock-data";
 
-const roleMap: Record<AgentProfile["role"], string> = {
+const roleLabel: Record<AgentProfile["role"], string> = {
   super_admin: "Trưởng nhóm",
   nhan_vien: "Nhân viên",
   cong_tac_vien: "Cộng tác viên",
 };
 
 export function AgentCard({ agent }: { agent: AgentProfile }) {
+  const initials = agent.name
+    .split(" ")
+    .map((p) => p[0])
+    .join("")
+    .slice(0, 2);
+
   return (
-    <article className="glass-card rounded-[30px] p-6">
+    <Link
+      href={`/doi-ngu/${agent.slug}`}
+      className="group relative overflow-hidden rounded-[22px] border border-[var(--border)] bg-[var(--s2)] p-6 transition duration-200 hover:border-[var(--brand)] hover:bg-[#161616]"
+    >
+      {/* Avatar + name */}
       <div className="flex items-center gap-4">
-        <div className="flex h-16 w-16 items-center justify-center rounded-[22px] bg-[linear-gradient(135deg,rgba(216,78,30,0.16),rgba(216,78,30,0.28))] text-lg font-black text-[var(--brand)]">
-          {agent.name
-            .split(" ")
-            .map((item) => item[0])
-            .join("")
-            .slice(0, 2)}
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] bg-gradient-to-br from-[rgba(216,78,30,0.2)] to-[rgba(216,78,30,0.08)] text-[18px] font-black text-[var(--brand)]">
+          {initials}
         </div>
         <div>
-          <div className="text-xl font-black text-white">{agent.name}</div>
-          <div className="text-sm text-zinc-400">{roleMap[agent.role]}</div>
+          <div className="font-black text-white">{agent.name}</div>
+          <div className="mt-0.5 text-xs text-zinc-500">
+            {roleLabel[agent.role] ?? agent.role}
+          </div>
         </div>
       </div>
 
-      <div className="chip-row mt-5">
-        {agent.specialtyDistricts.map((item) => (
-          <span key={item} className="chip">
-            {item}
+      {/* District tags */}
+      <div className="mt-4 flex flex-wrap gap-1.5">
+        {agent.specialtyDistricts.map((d) => (
+          <span
+            key={d}
+            className="rounded-[var(--r-sm)] border border-[var(--border)] px-2.5 py-1 text-[11px] text-zinc-400"
+          >
+            {d}
           </span>
         ))}
       </div>
 
-      <div className="mt-5 rounded-[24px] bg-zinc-900 p-5 text-sm">
-        <div className="section-kicker">Phân khúc chuyên môn</div>
-        <div className="mt-3 text-lg font-black text-white">{agent.specialtySegment}</div>
+      {/* Bio */}
+      <p className="mt-4 line-clamp-2 text-sm leading-6 text-zinc-500">{agent.bio}</p>
+
+      {/* Specialty segment */}
+      <div className="mt-4 rounded-[var(--r-md)] bg-[var(--s4)] px-3 py-2 text-xs text-zinc-400">
+        {agent.specialtySegment}
       </div>
 
-      <p className="mt-5 text-sm leading-7 text-zinc-400">{agent.bio}</p>
-
-      <Link href={`/doi-ngu/${agent.slug}`} className="primary-btn mt-6">
-        Xem profile
-      </Link>
-    </article>
+      {/* Arrow */}
+      <div className="mt-4 text-xs font-semibold text-zinc-600 transition group-hover:text-[var(--brand)]">
+        Xem profile →
+      </div>
+    </Link>
   );
 }

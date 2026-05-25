@@ -13,6 +13,22 @@
   --brand-deep: #b03a10;
   --brand-light: #fff0eb;
   --ink-soft: #d4d4d8;
+
+  /* Surface scale */
+  --s1: #0a0a0a;
+  --s2: #111111;
+  --s3: #141414;
+  --s4: #1a1a1a;
+  --s5: #1e1e1e;
+  --border: #2e2e28;
+
+  /* Border-radius scale */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 20px;
+  --r-xl: 32px;
+  --r-full: 999px;
 }
 
 @theme inline {
@@ -159,6 +175,20 @@ textarea {
 .primary-btn:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 3px;
+}
+
+/* Button size variants — dùng thay cho !important overrides */
+.primary-btn--lg,
+.secondary-btn--lg {
+  padding: 13px 24px;
+  font-size: 0.9375rem;
+}
+
+.primary-btn--sm,
+.secondary-btn--sm {
+  padding: 5px 12px;
+  font-size: 0.75rem;
+  border-radius: var(--r-sm);
 }
 
 .secondary-btn {

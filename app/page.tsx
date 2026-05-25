@@ -39,10 +39,10 @@ export default async function HomePage() {
             </p>
 
             <div className="mt-6 flex flex-wrap justify-center gap-3">
-              <Link href="/feed" className="primary-btn !px-6 !py-3 !text-[15px]">
+              <Link href="/feed" className="primary-btn primary-btn--lg">
                 Xem video ngay →
               </Link>
-              <Link href="/gui-nhu-cau" className="secondary-btn !px-6 !py-3 !text-[15px]">
+              <Link href="/gui-nhu-cau" className="secondary-btn secondary-btn--lg">
                 Tư vấn miễn phí
               </Link>
             </div>
