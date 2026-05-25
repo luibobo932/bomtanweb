@@ -25,7 +25,7 @@ export default async function ListingsPage() {
         </div>
       </section>
 
-      <section className="container-shell pb-16">
+      <section className="container-wide pb-16">
         <ListingsSection listings={listings} />
       </section>
     </SiteShell>

@@ -75,6 +75,13 @@ textarea {
   width: min(760px, calc(100vw - 24px));
 }
 
+/* Wider container for listing grids, team pages, etc. */
+.container-wide {
+  margin: 0 auto;
+  width: min(1200px, calc(100vw - 32px));
+  padding-inline: 4px;
+}
+
 .glass-card {
   border: 1px solid var(--line);
   background: #141414;

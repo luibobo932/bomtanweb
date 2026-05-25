@@ -33,14 +33,14 @@ export default async function TeamPage() {
       </section>
 
       {/* Agent grid */}
-      <section className="container-shell mt-10 grid gap-5 px-4 pb-16 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="container-wide mt-10 grid gap-5 pb-16 sm:grid-cols-2 lg:grid-cols-3">
         {agents.map((agent) => (
           <AgentCard key={agent.slug} agent={agent} />
         ))}
       </section>
 
       {/* CTA */}
-      <section className="container-shell px-4 pb-16">
+      <section className="container-shell pb-16">
         <div className="rounded-[20px] border border-[#2e2e28] bg-[#0d0d0d] p-6 text-center md:p-8">
           <p className="text-xl font-black text-white">Muốn được tư vấn trực tiếp?</p>
           <p className="mt-2 text-sm text-zinc-500">

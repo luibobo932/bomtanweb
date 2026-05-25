@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { SkeletonFeedCard } from "@/components/skeleton";
 import { VideoEmbed } from "@/components/video-embed";
@@ -12,16 +12,25 @@ const feedFilters = ["Tất cả", ...quickFilters, "Kiến thức"];
 function isVideoMatched(video: VideoItem, filter: string) {
   if (filter === "Tất cả") return true;
   if (filter === "Kiến thức") return video.contentType === "kien_thuc";
-  if (["Quận 1", "Quận 3", "Quận 5", "Quận 10"].includes(filter)) return video.districtTag === filter;
+  if (["Quận 1", "Quận 3", "Quận 5", "Quận 10"].includes(filter))
+    return video.districtTag === filter;
   if (filter === "Dưới 15 tỷ") {
-    return video.priceTag.includes("8-10") || video.priceTag.includes("14") || video.priceTag.includes("Guide");
+    return (
+      video.priceTag.includes("8-10") ||
+      video.priceTag.includes("14") ||
+      video.priceTag.includes("Guide")
+    );
   }
-  return video.houseTypeTag === filter || video.title.includes(filter) || video.summary.includes(filter);
+  return (
+    video.houseTypeTag === filter ||
+    video.title.includes(filter) ||
+    video.summary.includes(filter)
+  );
 }
 
 function VerifiedBadge() {
   return (
-    <span className="ml-1 inline-flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-[var(--brand)]">
+    <span className="ml-1 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[var(--brand)]">
       <svg className="h-2.5 w-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
         <path
           fillRule="evenodd"
@@ -36,15 +45,43 @@ function VerifiedBadge() {
 function FeedCard({ video }: { video: VideoItem }) {
   const [liked, setLiked] = useState(false);
   const [animating, setAnimating] = useState(false);
+  const [saved, setSaved] = useState(false);
   const agent = agents.find((item) => item.slug === video.reviewerSlug);
   const isVerified = (agent?.followCount ?? 0) > 100000;
+
+  // Load saved state from localStorage
+  useEffect(() => {
+    try {
+      const list: string[] = JSON.parse(
+        localStorage.getItem("bomtan_saved_videos") ?? "[]",
+      );
+      setSaved(list.includes(video.id));
+    } catch {}
+  }, [video.id]);
+
+  function toggleSave() {
+    try {
+      const list: string[] = JSON.parse(
+        localStorage.getItem("bomtan_saved_videos") ?? "[]",
+      );
+      const next = list.includes(video.id)
+        ? list.filter((id) => id !== video.id)
+        : [...list, video.id];
+      localStorage.setItem("bomtan_saved_videos", JSON.stringify(next));
+      setSaved(next.includes(video.id));
+    } catch {}
+  }
 
   return (
     <article className="overflow-hidden rounded-[20px] border border-[var(--border)] bg-[var(--s2)]">
       {/* Header */}
       <div className="flex items-center gap-3 border-b border-[var(--border)] px-4 py-3">
         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--brand)] text-sm font-bold text-white">
-          {video.reviewerName.split(" ").map((p) => p[0]).join("").slice(0, 2)}
+          {video.reviewerName
+            .split(" ")
+            .map((p) => p[0])
+            .join("")
+            .slice(0, 2)}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center text-sm font-semibold text-white">
@@ -55,7 +92,7 @@ function FeedCard({ video }: { video: VideoItem }) {
             {video.contentType === "review_nha" ? "Review nhà" : "Kiến thức"}
           </div>
         </div>
-        <div className="rounded-[var(--r-full)] bg-[var(--s1)] px-2.5 py-1 text-xs text-zinc-400">
+        <div className="rounded-[var(--r-full)] bg-[var(--s4)] px-2.5 py-1 text-xs text-zinc-400">
           {video.viewCountLabel} views
         </div>
       </div>
@@ -74,7 +111,7 @@ function FeedCard({ video }: { video: VideoItem }) {
           {video.title}
         </h3>
 
-        {/* Chips — dùng class hệ thống */}
+        {/* Chips */}
         <div className="chip-row mt-3">
           <span className="chip">📍 {video.districtTag}</span>
           <span className="chip">💰 {video.priceTag}</span>
@@ -86,17 +123,29 @@ function FeedCard({ video }: { video: VideoItem }) {
           <div className="flex items-center gap-3 text-sm text-zinc-400">
             <button
               type="button"
-              onClick={() => { setLiked((v) => !v); setAnimating(true); }}
+              onClick={() => {
+                setLiked((v) => !v);
+                setAnimating(true);
+              }}
               onAnimationEnd={() => setAnimating(false)}
               className={`${animating ? "animate-like" : ""} ${liked ? "text-[var(--brand)]" : ""} transition-colors`}
             >
               ♥ {video.likeCountLabel}
             </button>
-            <button type="button" className="transition-colors hover:text-white">
+            <button
+              type="button"
+              className="transition-colors hover:text-white"
+            >
               💬 {video.commentCountLabel}
             </button>
-            <button type="button" className="transition-colors hover:text-white">
-              ↗ {video.shareCountLabel}
+            <button
+              type="button"
+              onClick={toggleSave}
+              title={saved ? "Bỏ lưu video" : "Lưu video này"}
+              className={`transition-colors ${saved ? "text-[var(--brand)]" : "hover:text-white"}`}
+            >
+              {saved ? "🔖" : "🔖"}{" "}
+              <span className="text-xs">{saved ? "Đã lưu" : "Lưu"}</span>
             </button>
           </div>
 
@@ -119,6 +168,7 @@ export function VideoFeedSection({ videos }: { videos: VideoItem[] }) {
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const filterBarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setIsLoading(false), 350);
@@ -140,25 +190,33 @@ export function VideoFeedSection({ videos }: { videos: VideoItem[] }) {
   const visibleVideos = filteredVideos.slice(0, page * PAGE_SIZE);
   const hasMore = visibleVideos.length < filteredVideos.length;
 
-  const resetFilter = () => { setActiveFilter("Tất cả"); setPage(1); };
+  function selectFilter(f: string) {
+    setActiveFilter(f);
+    setPage(1);
+  }
+
+  const resetFilter = () => selectFilter("Tất cả");
 
   return (
     <>
       <section className="container-shell mt-4 pb-10">
         {/* Filter pills */}
-        <div className="mb-4 overflow-x-auto pb-1">
-          <div className="flex min-w-max gap-2">
+        <div
+          ref={filterBarRef}
+          className="sticky top-0 z-10 -mx-3 mb-4 overflow-x-auto bg-[var(--s1)] pb-2 pt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          <div className="flex min-w-max gap-2 px-3">
             {feedFilters.map((item) => {
               const active = activeFilter === item;
               return (
                 <button
                   key={item}
                   type="button"
-                  onClick={() => { setActiveFilter(item); setPage(1); }}
+                  onClick={() => selectFilter(item)}
                   className={`rounded-[var(--r-full)] px-4 py-2 text-sm transition-colors ${
                     active
                       ? "bg-[var(--brand)] font-semibold text-white"
-                      : "border border-[var(--border)] bg-[var(--s1)] text-zinc-300 hover:border-[var(--brand)] hover:text-white"
+                      : "border border-[var(--border)] bg-[var(--s3)] text-zinc-300 hover:border-[var(--brand)] hover:text-white"
                   }`}
                 >
                   {active && (
@@ -170,6 +228,23 @@ export function VideoFeedSection({ videos }: { videos: VideoItem[] }) {
             })}
           </div>
         </div>
+
+        {/* Video count */}
+        {!isLoading && (
+          <p className="mb-3 text-sm text-zinc-500">
+            <span className="font-semibold text-white">{filteredVideos.length}</span>{" "}
+            video
+            {activeFilter !== "Tất cả" && (
+              <button
+                type="button"
+                onClick={resetFilter}
+                className="ml-2 text-xs text-[var(--brand)] hover:underline"
+              >
+                Xóa bộ lọc
+              </button>
+            )}
+          </p>
+        )}
 
         {/* Content */}
         {isLoading ? (
@@ -204,7 +279,9 @@ export function VideoFeedSection({ videos }: { videos: VideoItem[] }) {
                   onClick={() => setPage((p) => p + 1)}
                   className="secondary-btn flex items-center gap-2"
                 >
-                  Xem thêm {Math.min(PAGE_SIZE, filteredVideos.length - visibleVideos.length)} video ↓
+                  Xem thêm{" "}
+                  {Math.min(PAGE_SIZE, filteredVideos.length - visibleVideos.length)}{" "}
+                  video ↓
                 </button>
               </div>
             )}
@@ -217,7 +294,7 @@ export function VideoFeedSection({ videos }: { videos: VideoItem[] }) {
         <button
           type="button"
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          className="fixed bottom-6 right-4 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--s3)] text-white transition hover:border-[var(--brand)] hover:text-[var(--brand)]"
+          className="fixed bottom-20 right-4 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--s3)] text-white transition hover:border-[var(--brand)] hover:text-[var(--brand)]"
         >
           ↑
         </button>

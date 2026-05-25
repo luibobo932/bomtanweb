@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ListingCard } from "@/components/listing-card";
 import { ShareButtons } from "@/components/share-buttons";
 import { SiteShell } from "@/components/site-shell";
+import { WishlistButton } from "@/components/wishlist-button";
 import { getListingBySlug, getPublicListings } from "@/lib/listing-repository";
 import { getPublicVideos } from "@/lib/video-repository";
 
@@ -43,6 +44,13 @@ export async function generateMetadata({
   };
 }
 
+const statusMap: Record<string, { label: string; color: string }> = {
+  con_ban: { label: "Còn bán", color: "bg-[#1d9e75] text-white" },
+  dang_thuong_luong: { label: "Đang thương lượng", color: "bg-[#ef9f27] text-white" },
+  da_ban: { label: "Đã bán", color: "bg-zinc-600 text-white" },
+  ngung_ban: { label: "Ngừng bán", color: "bg-zinc-700 text-white" },
+};
+
 export default async function ListingDetailPage({
   params,
 }: {
@@ -51,176 +59,299 @@ export default async function ListingDetailPage({
   const { slug } = await params;
   const listing = await getListingBySlug(slug);
 
-  if (!listing) {
-    notFound();
-  }
+  if (!listing) notFound();
 
   const listings = await getPublicListings();
-  const relatedVideos = (await getPublicVideos()).filter((item) => item.listingSlug === slug);
-  const similarListings = listings.filter(
-    (item) => item.slug !== slug && item.district === listing.district,
+  const relatedVideos = (await getPublicVideos()).filter(
+    (item) => item.listingSlug === slug,
   );
+  const similarListings = listings
+    .filter((item) => item.slug !== slug && item.district === listing.district)
+    .slice(0, 4);
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://nhaphosg.com";
+  const pageUrl = `${siteUrl}/nha-ban/${slug}`;
+  const status = statusMap[listing.status] ?? { label: listing.status, color: "bg-zinc-700 text-white" };
 
   return (
     <SiteShell>
-      <section className="container-shell pt-10 md:pt-14">
-        <div className="editorial-panel overflow-hidden p-6 md:p-8 xl:p-10">
-          <div className="grid gap-8 xl:grid-cols-[1.02fr_0.98fr]">
-            <div>
-              <div className="section-kicker">{listing.id}</div>
-              <h1 className="mt-3 max-w-4xl text-4xl font-black tracking-tight md:text-6xl">
-                {listing.title}
-              </h1>
-              <p className="mt-4 max-w-2xl text-lg leading-8 text-zinc-400">{listing.heroNote}</p>
+      <div className="container-wide py-10 md:py-14">
+        {/* Breadcrumb */}
+        <nav className="mb-4 flex items-center gap-1.5 text-xs text-zinc-500">
+          <Link href="/" className="hover:text-zinc-300">Trang chủ</Link>
+          <span>/</span>
+          <Link href="/nha-ban" className="hover:text-zinc-300">Nhà đang bán</Link>
+          <span>/</span>
+          <span className="text-zinc-400">{listing.district}</span>
+        </nav>
 
-              <div className="chip-row mt-6">
-                <span className="chip">{listing.district}</span>
-                <span className="chip">{listing.street}</span>
-                <span className="chip">{listing.houseType}</span>
-                <span className="chip">{listing.areaLabel}</span>
-              </div>
-
-              <div className="mt-5">
-                <ShareButtons
-                  title={listing.title}
-                  url={`${process.env.NEXT_PUBLIC_SITE_URL ?? "https://nhaphosg.com"}/nha-ban/${listing.slug}`}
-                />
-              </div>
-
-              <div className="mt-8 grid gap-4 sm:grid-cols-3">
-                <div className="rounded-[26px] border border-zinc-800 bg-zinc-950 p-5">
-                  <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">Giá chào</div>
-                  <div className="mt-2 text-3xl font-black text-white">{listing.priceLabel}</div>
-                </div>
-                <div className="rounded-[26px] border border-zinc-800 bg-zinc-950 p-5">
-                  <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">Diện tích</div>
-                  <div className="mt-2 text-2xl font-black text-white">{listing.dimensions}</div>
-                </div>
-                <div className="rounded-[26px] border border-zinc-800 bg-zinc-950 p-5">
-                  <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">
-                    Người phụ trách
-                  </div>
-                  <div className="mt-2 text-2xl font-black text-white">{listing.managerName}</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="video-stage min-h-[520px] p-6 text-white">
-              <div className="relative z-10 flex items-center justify-between">
+        <div className="grid gap-8 xl:grid-cols-[1fr_320px]">
+          {/* ─── Main content ─── */}
+          <div className="min-w-0">
+            {/* Hero */}
+            <div className="editorial-panel overflow-hidden p-6 md:p-8">
+              {/* Title row */}
+              <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <div className="text-xs uppercase tracking-[0.18em] text-white/62">
-                    Video / lead action
+                  <div className="section-kicker">{listing.id}</div>
+                  <h1 className="mt-2 text-3xl font-black tracking-tight text-white md:text-4xl">
+                    {listing.title}
+                  </h1>
+                </div>
+                <span className={`mt-1 shrink-0 rounded-[var(--r-full)] px-3 py-1 text-sm font-semibold ${status.color}`}>
+                  {status.label}
+                </span>
+              </div>
+
+              <p className="mt-3 text-base leading-7 text-zinc-400">
+                {listing.heroNote}
+              </p>
+
+              {/* Chips */}
+              <div className="chip-row mt-4">
+                <span className="chip">📍 {listing.district}</span>
+                <span className="chip">🏘 {listing.street}</span>
+                <span className="chip">{listing.houseType}</span>
+                <span className="chip">📐 {listing.areaLabel}</span>
+              </div>
+
+              {/* Share + Wishlist */}
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                <ShareButtons title={listing.title} url={pageUrl} />
+                <WishlistButton slug={listing.slug} title={listing.title} />
+              </div>
+
+              {/* Key metrics */}
+              <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--s5)] p-4">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                    Giá chào
                   </div>
-                  <div className="mt-2 text-3xl font-black">Căn nhà này hợp ai?</div>
+                  <div className="mt-1.5 text-2xl font-black text-white">
+                    {listing.priceLabel}
+                  </div>
                 </div>
-                <div className="dark-pill text-sm font-bold">
-                  {{ con_ban: "Còn bán", dang_thuong_luong: "Đang TL", da_ban: "Đã bán", ngung_ban: "Ngừng" }[listing.status] ?? listing.status}
+                <div className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--s5)] p-4">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                    Diện tích
+                  </div>
+                  <div className="mt-1.5 text-2xl font-black text-white">
+                    {listing.dimensions}
+                  </div>
+                  <div className="mt-0.5 text-xs text-zinc-500">{listing.areaLabel}</div>
                 </div>
-              </div>
-
-              <div className="relative z-10 mt-8 space-y-4">
-                <div className="rounded-[28px] bg-white/10 p-5">
-                  <div className="text-sm text-white/64">Phù hợp cho</div>
-                  <div className="mt-2 text-lg font-bold">{listing.suitableFor.join(" - ")}</div>
+                <div className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--s5)] p-4">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                    Pháp lý
+                  </div>
+                  <div className="mt-1.5 text-sm font-bold text-white">
+                    {listing.legal}
+                  </div>
                 </div>
-                <div className="rounded-[28px] bg-white/10 p-5">
-                  <div className="text-sm text-white/64">Pháp lý</div>
-                  <div className="mt-2 text-lg font-bold">{listing.legal}</div>
-                </div>
-                <div className="rounded-[28px] bg-white/10 p-5">
-                  <div className="text-sm text-white/64">Tình trạng thuê</div>
-                  <div className="mt-2 text-lg font-bold">{listing.occupancy}</div>
-                </div>
-              </div>
-
-              <div className="relative z-10 mt-8 flex flex-wrap gap-3">
-                <Link
-                  href="/gui-nhu-cau"
-                  className="secondary-btn border-white/18 bg-white/10 text-white"
-                >
-                  Đăng ký xem nhà
-                </Link>
-                <Link
-                  href={`/doi-ngu/${listing.managerSlug}`}
-                  className="secondary-btn border-white/18 bg-white/10 text-white"
-                >
-                  Liên hệ người phụ trách
-                </Link>
               </div>
             </div>
-          </div>
 
-          <div className="mt-10 grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-            <div className="space-y-6">
-              <div className="rounded-[28px] border border-zinc-800 bg-zinc-950 p-6">
+            {/* Detail grid */}
+            <div className="mt-6 grid gap-6 md:grid-cols-2">
+              {/* Hồ sơ căn nhà */}
+              <div className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--s3)] p-6">
                 <div className="section-kicker">Hồ sơ căn nhà</div>
-                <div className="mt-4 grid gap-4 text-sm leading-7 text-zinc-300">
-                  <div>
-                    Địa chỉ: {listing.street}, {listing.ward}, {listing.district}
-                  </div>
-                  <div>Kết cấu: {listing.layout}</div>
-                  <div>Loại nhà: {listing.houseType}</div>
-                  <div>Pháp lý: {listing.legal}</div>
-                  <div>Hiện trạng thuê: {listing.occupancy}</div>
-                </div>
+                <dl className="mt-4 space-y-3 text-sm">
+                  {[
+                    ["Địa chỉ", `${listing.street}, ${listing.ward}, ${listing.district}`],
+                    ["Kết cấu", listing.layout],
+                    ["Loại nhà", listing.houseType],
+                    ["Pháp lý", listing.legal],
+                    ["Hiện trạng", listing.occupancy],
+                  ].map(([label, value]) => (
+                    <div key={label} className="flex gap-2">
+                      <dt className="w-24 shrink-0 text-zinc-500">{label}</dt>
+                      <dd className="text-zinc-300">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
               </div>
 
-              <div className="rounded-[28px] border border-zinc-800 bg-zinc-950 p-6">
-                <div className="section-kicker">Ưu điểm chốt nhanh</div>
-                <div className="mt-4 space-y-3 text-sm leading-7 text-zinc-300">
-                  {listing.advantages.map((item) => (
-                    <div key={item}>- {item}</div>
+              {/* Phù hợp cho */}
+              <div className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--s3)] p-6">
+                <div className="section-kicker">Căn nhà này hợp ai?</div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {listing.suitableFor.map((item) => (
+                    <span
+                      key={item}
+                      className="rounded-[var(--r-full)] border border-[var(--brand)]/40 bg-[var(--brand)]/10 px-3 py-1 text-sm text-white"
+                    >
+                      {item}
+                    </span>
                   ))}
                 </div>
+                <div className="mt-4 rounded-[var(--r-md)] bg-[var(--s5)] p-4">
+                  <div className="text-xs text-zinc-500">Tình trạng thuê</div>
+                  <div className="mt-1 text-sm font-semibold text-white">
+                    {listing.occupancy}
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-6">
-              <div className="rounded-[28px] border border-zinc-800 bg-zinc-950 p-6">
+              {/* Ưu điểm */}
+              <div className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--s3)] p-6">
+                <div className="section-kicker">Ưu điểm chốt nhanh</div>
+                <ul className="mt-4 space-y-2.5">
+                  {listing.advantages.map((item) => (
+                    <li key={item} className="flex items-start gap-2 text-sm text-zinc-300">
+                      <span className="mt-0.5 text-[var(--brand)]">✓</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Lưu ý */}
+              <div className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--s3)] p-6">
                 <div className="section-kicker">Lưu ý khi dẫn khách</div>
                 <p className="mt-4 text-sm leading-7 text-zinc-300">{listing.caution}</p>
               </div>
+            </div>
 
-              <div className="rounded-[28px] border border-zinc-800 bg-zinc-950 p-6">
-                <div className="section-kicker">Video liên quan</div>
-                <div className="mt-4 space-y-4">
-                  {relatedVideos.length > 0 ? (
-                    relatedVideos.map((video) => (
-                      <div
-                        key={video.id}
-                        className="rounded-[22px] border border-zinc-800 bg-black/30 p-4"
-                      >
-                        <div className="font-black text-white">{video.title}</div>
-                        <div className="mt-2 text-sm leading-7 text-zinc-400">{video.summary}</div>
+            {/* Video liên quan */}
+            <div className="mt-6 rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--s3)] p-6">
+              <div className="section-kicker">Video review liên quan</div>
+              <div className="mt-4 space-y-3">
+                {relatedVideos.length > 0 ? (
+                  relatedVideos.map((video) => (
+                    <div
+                      key={video.id}
+                      className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--s5)] p-4"
+                    >
+                      <div className="font-bold text-white">{video.title}</div>
+                      <div className="mt-1.5 text-sm leading-6 text-zinc-400">
+                        {video.summary}
                       </div>
-                    ))
-                  ) : (
-                    <div className="rounded-[22px] border border-zinc-800 bg-black/30 p-4 text-sm text-zinc-400">
-                      Chưa có video review gắn listing này.
+                      <div className="mt-2 flex items-center gap-3 text-xs text-zinc-500">
+                        <span>👁 {video.viewCountLabel}</span>
+                        <span>♥ {video.likeCountLabel}</span>
+                        <span>💬 {video.commentCountLabel}</span>
+                      </div>
                     </div>
-                  )}
-                </div>
+                  ))
+                ) : (
+                  <div className="rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--s5)] p-4 text-sm text-zinc-500">
+                    Chưa có video review gắn listing này.{" "}
+                    <Link href="/feed" className="text-[var(--brand)] hover:underline">
+                      Xem tất cả video →
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        </div>
-      </section>
 
-      <section className="container-shell mt-16">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <div className="section-kicker">Căn tương tự</div>
-            <h2 className="mt-3 text-3xl font-black tracking-tight">
+          {/* ─── Sticky sidebar ─── */}
+          <aside className="hidden xl:block">
+            <div className="sticky top-6 space-y-4">
+              {/* CTA card */}
+              <div className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--s3)] p-5">
+                <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                  Giá chào
+                </div>
+                <div className="text-3xl font-black text-[var(--brand)]">
+                  {listing.priceLabel}
+                </div>
+                <div className="mt-1 text-sm text-zinc-500">
+                  {listing.dimensions} · {listing.areaLabel}
+                </div>
+
+                <div className="mt-4 space-y-2.5">
+                  <Link
+                    href="/gui-nhu-cau"
+                    className="primary-btn block w-full text-center"
+                  >
+                    Đăng ký xem nhà
+                  </Link>
+                  <Link
+                    href={`https://zalo.me/${process.env.NEXT_PUBLIC_ZALO_URL?.replace(/\D/g, "") ?? ""}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="secondary-btn block w-full text-center"
+                  >
+                    Nhắn Zalo ngay
+                  </Link>
+                </div>
+              </div>
+
+              {/* Agent card */}
+              <div className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--s3)] p-5">
+                <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                  Người phụ trách
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-sm font-bold text-white">
+                    {listing.managerName
+                      .split(" ")
+                      .map((p) => p[0])
+                      .join("")
+                      .slice(0, 2)}
+                  </div>
+                  <div>
+                    <div className="font-bold text-white">{listing.managerName}</div>
+                    <div className="text-xs text-zinc-500">Chuyên gia BomTan</div>
+                  </div>
+                </div>
+                <Link
+                  href={`/doi-ngu/${listing.managerSlug}`}
+                  className="secondary-btn mt-4 block w-full text-center text-sm"
+                >
+                  Xem hồ sơ chuyên gia
+                </Link>
+              </div>
+
+              {/* Quick info */}
+              <div className="rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--s3)] p-5">
+                <dl className="space-y-3 text-sm">
+                  {[
+                    ["📍 Quận", listing.district],
+                    ["🏠 Loại", listing.houseType],
+                    ["📜 Pháp lý", listing.legal],
+                  ].map(([label, value]) => (
+                    <div key={label} className="flex items-start justify-between gap-2">
+                      <dt className="text-zinc-500">{label}</dt>
+                      <dd className="text-right text-zinc-300">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        {/* Mobile CTA (shown below main content on small screens) */}
+        <div className="mt-6 flex flex-wrap gap-3 xl:hidden">
+          <Link href="/gui-nhu-cau" className="primary-btn flex-1 text-center">
+            Đăng ký xem nhà
+          </Link>
+          <Link
+            href={`/doi-ngu/${listing.managerSlug}`}
+            className="secondary-btn flex-1 text-center"
+          >
+            Liên hệ người phụ trách
+          </Link>
+        </div>
+
+        {/* Căn tương tự */}
+        {similarListings.length > 0 && (
+          <section className="mt-16">
+            <div className="mb-2 section-kicker">Căn tương tự</div>
+            <h2 className="text-2xl font-black tracking-tight text-white">
               Thêm hàng cùng khu vực để so sánh nhanh
             </h2>
-          </div>
-        </div>
-        <div className="mt-6 grid gap-6 lg:grid-cols-2">
-          {similarListings.map((item) => (
-            <ListingCard key={item.id} listing={item} />
-          ))}
-        </div>
-      </section>
+            <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {similarListings.map((item) => (
+                <ListingCard key={item.id} listing={item} />
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
     </SiteShell>
   );
 }

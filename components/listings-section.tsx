@@ -2,73 +2,83 @@
 
 import { useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
+import { FilterChipsBar } from "@/components/filter-chips-bar";
+import { FilterDrawer } from "@/components/filter-drawer";
 import { ListingCard } from "@/components/listing-card";
+import { SortBar } from "@/components/sort-bar";
+import { useFilterState } from "@/hooks/use-filter-state";
 import type { ListingItem } from "@/data/mock-data";
+import { applyFilter, filterToChips } from "@/lib/filter-utils";
 
 const PAGE_SIZE = 9;
 
-const FILTERS = [
-  { label: "Tất cả", match: () => true },
-  { label: "Quận 1",   match: (l: ListingItem) => l.district === "Quận 1" },
-  { label: "Quận 3",   match: (l: ListingItem) => l.district === "Quận 3" },
-  { label: "Quận 5",   match: (l: ListingItem) => l.district === "Quận 5" },
-  { label: "Quận 10",  match: (l: ListingItem) => l.district === "Quận 10" },
-  { label: "Dưới 15 tỷ", match: (l: ListingItem) => {
-    const n = parseFloat(l.priceLabel.replace(/[^\d.]/g, ""));
-    return !isNaN(n) && n < 15;
-  }},
-  { label: "15–30 tỷ", match: (l: ListingItem) => {
-    const n = parseFloat(l.priceLabel.replace(/[^\d.]/g, ""));
-    return !isNaN(n) && n >= 15 && n <= 30;
-  }},
-  { label: "Hẻm xe hơi", match: (l: ListingItem) =>
-    l.houseType?.toLowerCase().includes("hẻm") ||
-    l.advantages?.some((a) => a.toLowerCase().includes("xe hơi")) },
-  { label: "Mặt tiền", match: (l: ListingItem) =>
-    l.houseType?.toLowerCase().includes("mặt tiền") ||
-    l.advantages?.some((a) => a.toLowerCase().includes("mặt tiền")) },
-];
-
 export function ListingsSection({ listings }: { listings: ListingItem[] }) {
-  const [activeFilter, setActiveFilter] = useState("Tất cả");
   const [page, setPage] = useState(1);
+  const {
+    filter,
+    draft,
+    updateDraft,
+    updateFilter,
+    applyDraft,
+    resetAll,
+    removeChip,
+    drawerOpen,
+    openDrawer,
+    closeDrawer,
+  } = useFilterState();
 
-  const filtered = useMemo(() => {
-    const f = FILTERS.find((item) => item.label === activeFilter);
-    return f ? listings.filter(f.match) : listings;
-  }, [activeFilter, listings]);
+  // Preview count inside drawer (based on draft, not applied filter)
+  const previewCount = useMemo(
+    () => applyFilter(listings, draft).length,
+    [listings, draft],
+  );
+
+  // Applied filter results
+  const filtered = useMemo(
+    () => applyFilter(listings, filter),
+    [listings, filter],
+  );
 
   const visible = filtered.slice(0, page * PAGE_SIZE);
   const hasMore = visible.length < filtered.length;
 
-  function selectFilter(label: string) {
-    setActiveFilter(label);
+  const activeChips = useMemo(() => filterToChips(filter), [filter]);
+
+  function handleApply() {
+    applyDraft();
+    setPage(1);
+  }
+
+  function handleRemoveChip(key: string) {
+    removeChip(key);
+    setPage(1);
+  }
+
+  function handleClearAll() {
+    resetAll();
     setPage(1);
   }
 
   return (
     <>
-      {/* Filter chips */}
-      <div className="mt-6 overflow-x-auto pb-1">
-        <div className="flex min-w-max gap-2">
-          {FILTERS.map(({ label }) => {
-            const active = activeFilter === label;
-            return (
-              <button
-                key={label}
-                onClick={() => selectFilter(label)}
-                className={`rounded-full px-4 py-2 text-sm transition-colors ${
-                  active
-                    ? "bg-[var(--brand)] font-semibold text-white"
-                    : "border border-[var(--border)] bg-[var(--s1)] text-zinc-300 hover:border-[var(--brand)] hover:text-white"
-                }`}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      {/* Sort + filter bar */}
+      <SortBar
+        total={filtered.length}
+        filter={filter}
+        onOpenFilter={openDrawer}
+        onSortChange={(sort) => {
+          // Apply sort immediately without opening drawer
+          updateFilter({ sortBy: sort });
+          setPage(1);
+        }}
+      />
+
+      {/* Active filter chips */}
+      <FilterChipsBar
+        chips={activeChips}
+        onRemove={handleRemoveChip}
+        onClearAll={handleClearAll}
+      />
 
       {/* Grid */}
       {visible.length === 0 ? (
@@ -76,9 +86,13 @@ export function ListingsSection({ listings }: { listings: ListingItem[] }) {
           <EmptyState
             icon="🏠"
             title="Chưa có listing cho bộ lọc này"
-            description="Thử chọn khu vực khác hoặc xem tất cả nhà đang bán"
+            description="Thử điều chỉnh bộ lọc hoặc xem tất cả nhà đang bán"
             action={
-              <button type="button" className="primary-btn" onClick={() => selectFilter("Tất cả")}>
+              <button
+                type="button"
+                className="primary-btn"
+                onClick={handleClearAll}
+              >
                 Xem tất cả nhà bán
               </button>
             }
@@ -86,7 +100,7 @@ export function ListingsSection({ listings }: { listings: ListingItem[] }) {
         </div>
       ) : (
         <>
-          <div className="mt-6 grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
+          <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {visible.map((listing) => (
               <ListingCard key={listing.id} listing={listing} />
             ))}
@@ -99,7 +113,8 @@ export function ListingsSection({ listings }: { listings: ListingItem[] }) {
                 onClick={() => setPage((p) => p + 1)}
                 className="secondary-btn flex items-center gap-2"
               >
-                Xem thêm {Math.min(PAGE_SIZE, filtered.length - visible.length)} căn ↓
+                Xem thêm{" "}
+                {Math.min(PAGE_SIZE, filtered.length - visible.length)} căn ↓
               </button>
             </div>
           )}
@@ -109,6 +124,20 @@ export function ListingsSection({ listings }: { listings: ListingItem[] }) {
           </p>
         </>
       )}
+
+      {/* Filter Drawer */}
+      <FilterDrawer
+        isOpen={drawerOpen}
+        onClose={closeDrawer}
+        draft={draft}
+        onChange={updateDraft}
+        onApply={handleApply}
+        onReset={() => {
+          resetAll();
+          setPage(1);
+        }}
+        resultCount={previewCount}
+      />
     </>
   );
 }
