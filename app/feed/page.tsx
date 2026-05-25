@@ -7,14 +7,14 @@ export default async function FeedPage() {
 
   return (
     <SiteShell>
-      <section className="container-shell px-1 py-5">
-        <div className="rounded-[16px] border border-zinc-900 bg-[#0d0d0d] px-4 py-5">
-          <div className="section-kicker">Feed video</div>
+      <section className="container-shell pt-10 md:pt-14">
+        <div className="editorial-panel p-6 md:p-8">
+          <div className="section-kicker">Video review</div>
           <h1 className="mt-2 text-2xl font-bold tracking-tight text-white md:text-3xl">
-            Xem review nhà phố như TikTok, nhưng chốt lead theo logic CRM
+            Xem nhà thật trước khi quyết định — nhanh như lướt TikTok
           </h1>
           <p className="mt-2 text-sm text-zinc-400">
-            Lướt video, lọc nhanh theo quận và mở ngay hồ sơ căn nhà phù hợp.
+            Lọc theo quận, giá, loại nhà — bấm vào video nào ưng là xem ngay hồ sơ căn đó.
           </p>
         </div>
       </section>

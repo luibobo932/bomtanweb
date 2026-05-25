@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { EmptyState } from "@/components/empty-state";
 import { ListingCard } from "@/components/listing-card";
 import type { ListingItem } from "@/data/mock-data";
 
@@ -59,7 +60,7 @@ export function ListingsSection({ listings }: { listings: ListingItem[] }) {
                 className={`rounded-full px-4 py-2 text-sm transition-colors ${
                   active
                     ? "bg-[var(--brand)] font-semibold text-white"
-                    : "border border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-zinc-500 hover:text-white"
+                    : "border border-[var(--border)] bg-[var(--s1)] text-zinc-300 hover:border-[var(--brand)] hover:text-white"
                 }`}
               >
                 {label}
@@ -71,15 +72,17 @@ export function ListingsSection({ listings }: { listings: ListingItem[] }) {
 
       {/* Grid */}
       {visible.length === 0 ? (
-        <div className="mt-12 flex flex-col items-center justify-center gap-4 text-center">
-          <div className="text-4xl">🏠</div>
-          <p className="text-zinc-400">Chưa có listing cho bộ lọc này.</p>
-          <button
-            onClick={() => selectFilter("Tất cả")}
-            className="rounded-xl bg-[var(--brand)] px-5 py-2.5 text-sm font-semibold text-white"
-          >
-            Xem tất cả
-          </button>
+        <div className="mt-8">
+          <EmptyState
+            icon="🏠"
+            title="Chưa có listing cho bộ lọc này"
+            description="Thử chọn khu vực khác hoặc xem tất cả nhà đang bán"
+            action={
+              <button type="button" className="primary-btn" onClick={() => selectFilter("Tất cả")}>
+                Xem tất cả nhà bán
+              </button>
+            }
+          />
         </div>
       ) : (
         <>
@@ -92,8 +95,9 @@ export function ListingsSection({ listings }: { listings: ListingItem[] }) {
           {hasMore && (
             <div className="mt-8 flex justify-center">
               <button
+                type="button"
                 onClick={() => setPage((p) => p + 1)}
-                className="flex items-center gap-2 rounded-2xl border border-zinc-700 bg-zinc-900 px-6 py-3 text-sm font-semibold text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                className="secondary-btn flex items-center gap-2"
               >
                 Xem thêm {Math.min(PAGE_SIZE, filtered.length - visible.length)} căn ↓
               </button>

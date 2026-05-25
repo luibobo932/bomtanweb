@@ -29,6 +29,25 @@ export function SkeletonVideoCard() {
   );
 }
 
+export function SkeletonFeedCard() {
+  return (
+    <div className="animate-pulse overflow-hidden rounded-[20px] border border-[var(--border)] bg-[var(--s2)] p-4">
+      <div className="mb-3 flex items-center gap-3">
+        <div className="h-9 w-9 rounded-full bg-[var(--s5)]" />
+        <div className="flex-1 space-y-1.5">
+          <div className="h-3 w-1/3 rounded bg-[var(--border)]" />
+          <div className="h-2.5 w-1/4 rounded bg-[var(--border)]" />
+        </div>
+      </div>
+      <div className="mb-3 w-full rounded-[var(--r-md)] bg-[var(--s5)]" style={{ aspectRatio: "9/16", maxHeight: "280px" }} />
+      <div className="space-y-2">
+        <div className="h-3 w-3/4 rounded bg-[var(--border)]" />
+        <div className="h-3 w-1/2 rounded bg-[var(--border)]" />
+      </div>
+    </div>
+  );
+}
+
 export function SkeletonAgentCard() {
   return (
     <div className="animate-pulse rounded-[22px] border border-[var(--border)] bg-[var(--s2)] p-6">
