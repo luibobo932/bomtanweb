@@ -54,21 +54,20 @@ export function VideoEmbed({
     );
   }
 
-  // Native TikTok embed (blockquote + embed.js) — shows live likes/views/comments
-  const embedHtml = video.embedCode?.includes("tiktok-embed")
-    ? video.embedCode
-    : resolved?.html;
+  // Native embed only when admin explicitly set the embed code (not auto-resolved)
+  // Auto-resolved TikTok uses iframe (embedUrl) to avoid embed.js timing issues
+  const adminEmbedHtml = video.embedCode?.includes("tiktok-embed") ? video.embedCode : null;
 
-  if (video.videoSourceType === "tiktok" && embedHtml) {
+  if (video.videoSourceType === "tiktok" && adminEmbedHtml) {
     return (
       <div className={`flex h-full w-full items-center justify-center overflow-auto ${className}`}>
-        <div className="w-full" dangerouslySetInnerHTML={{ __html: embedHtml }} />
+        <div className="w-full" dangerouslySetInnerHTML={{ __html: adminEmbedHtml }} />
         <Script src="https://www.tiktok.com/embed.js" strategy="lazyOnload" />
       </div>
     );
   }
 
-  // Resolved iframe URL from oEmbed (fallback if no html)
+  // Prefer embedUrl (iframe) — works immediately without embed.js
   const embedUrl = video.embedUrl || resolved?.embedUrl;
 
   // Short URL still resolving
