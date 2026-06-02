@@ -5,6 +5,8 @@ import { SiteShell } from "@/components/site-shell";
 import { getAdminSession } from "@/lib/auth";
 import { hasSupabaseEnv } from "@/lib/supabase";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminLoginPage() {
   const session = await getAdminSession();
 
