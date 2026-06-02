@@ -80,6 +80,31 @@ export function VideoEmbed({
     );
   }
 
+  // oEmbed resolved nhưng không có URL lẫn HTML → TikTok có thể bị block
+  if (!embedUrl && video.videoSourceType === "tiktok") {
+    return (
+      <a
+        href={video.videoUrl}
+        target="_blank"
+        rel="noreferrer"
+        className={`relative flex h-full w-full items-center justify-center overflow-hidden ${className}`}
+      >
+        <img
+          src={video.thumbnailUrl}
+          alt={video.title}
+          className="h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/50">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" className="opacity-90">
+            <circle cx="24" cy="24" r="24" fill="rgba(0,0,0,0.5)" />
+            <polygon points="18,14 38,24 18,34" fill="white" />
+          </svg>
+          <span className="text-white text-xs font-semibold">Xem trên TikTok ↗</span>
+        </div>
+      </a>
+    );
+  }
+
   if (!embedUrl) {
     return (
       <div className={`flex h-full w-full items-center justify-center text-sm text-white/80 ${className}`}>

@@ -106,29 +106,35 @@ function normalizeListingForSupabase(listing: ListingItem, managerProfileId?: st
   };
 }
 
+const seedPublicListings = () =>
+  listings.filter(
+    (item) =>
+      (item.approvalStatus ?? "approved") === "approved" &&
+      ["con_ban", "dang_thuong_luong"].includes(item.status),
+  );
+
 export async function getPublicListings() {
   if (hasSupabaseEnv()) {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase!
-      .from("listings")
-      .select("*")
-      .eq("approval_status", "approved")
-      .in("status", ["con_ban", "dang_thuong_luong"])
-      .order("created_at", { ascending: false });
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase!
+        .from("listings")
+        .select("*")
+        .eq("approval_status", "approved")
+        .in("status", ["con_ban", "dang_thuong_luong"])
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      throw new Error(`Khong doc duoc listings tu Supabase: ${error.message}`);
-    }
+      if (error) {
+        console.error("[listing-repository] Supabase error:", error.message);
+        return seedPublicListings();
+      }
 
-    const rows = (data ?? []).map((row) => mapListingRow(row));
-    if (rows.length === 0) {
-      return listings.filter(
-        (item) =>
-          (item.approvalStatus ?? "approved") === "approved" &&
-          ["con_ban", "dang_thuong_luong"].includes(item.status),
-      );
+      const rows = (data ?? []).map((row) => mapListingRow(row));
+      return rows.length > 0 ? rows : seedPublicListings();
+    } catch (err) {
+      console.error("[listing-repository] Connection error:", err);
+      return seedPublicListings();
     }
-    return rows;
   }
 
   return runtimeListings.filter(
@@ -140,21 +146,24 @@ export async function getPublicListings() {
 
 export async function getAllListings() {
   if (hasSupabaseEnv()) {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase!
-      .from("listings")
-      .select("*")
-      .order("created_at", { ascending: false });
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase!
+        .from("listings")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      throw new Error(`Khong doc duoc tat ca listings: ${error.message}`);
-    }
+      if (error) {
+        console.error("[listing-repository] getAllListings Supabase error:", error.message);
+        return [...listings];
+      }
 
-    const rows = (data ?? []).map((row) => mapListingRow(row));
-    if (rows.length === 0) {
+      const rows = (data ?? []).map((row) => mapListingRow(row));
+      return rows.length > 0 ? rows : [...listings];
+    } catch (err) {
+      console.error("[listing-repository] getAllListings Connection error:", err);
       return [...listings];
     }
-    return rows;
   }
 
   return [...runtimeListings];
@@ -162,18 +171,24 @@ export async function getAllListings() {
 
 export async function getListingBySlug(slug: string) {
   if (hasSupabaseEnv()) {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase!
-      .from("listings")
-      .select("*")
-      .eq("slug", slug)
-      .maybeSingle();
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase!
+        .from("listings")
+        .select("*")
+        .eq("slug", slug)
+        .maybeSingle();
 
-    if (error) {
-      throw new Error(`Khong doc duoc listing theo slug: ${error.message}`);
+      if (error) {
+        console.error("[listing-repository] getListingBySlug Supabase error:", error.message);
+        return listings.find((item) => item.slug === slug);
+      }
+
+      return data ? mapListingRow(data) : listings.find((item) => item.slug === slug);
+    } catch (err) {
+      console.error("[listing-repository] getListingBySlug Connection error:", err);
+      return listings.find((item) => item.slug === slug);
     }
-
-    return data ? mapListingRow(data) : undefined;
   }
 
   return runtimeListings.find((item) => item.slug === slug);

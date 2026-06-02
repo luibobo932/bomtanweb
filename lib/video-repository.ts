@@ -155,44 +155,50 @@ async function resolveListingFromSupabase(listingId?: string | null) {
 
 export async function getPublicVideos() {
   if (hasSupabaseEnv()) {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase!
-      .from("videos")
-      .select("*")
-      .eq("approval_status", "approved")
-      .order("published_at", { ascending: false, nullsFirst: false });
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase!
+        .from("videos")
+        .select("*")
+        .eq("approval_status", "approved")
+        .order("published_at", { ascending: false, nullsFirst: false });
 
-    if (error) {
-      throw new Error(`Khong doc duoc videos tu Supabase: ${error.message}`);
-    }
+      if (error) {
+        console.error("[video-repository] Supabase error:", error.message);
+        return seedVideos.filter((v) => v.approvalStatus === "approved");
+      }
 
-    const rows = (data ?? []).map((row) => mapSupabaseVideo(row));
-    if (rows.length === 0) {
-      return seedVideos.filter((item) => item.approvalStatus === "approved");
+      const rows = (data ?? []).map((row) => mapSupabaseVideo(row));
+      return rows.length > 0 ? rows : seedVideos.filter((v) => v.approvalStatus === "approved");
+    } catch (err) {
+      console.error("[video-repository] Connection error:", err);
+      return seedVideos.filter((v) => v.approvalStatus === "approved");
     }
-    return rows;
   }
 
-  return runtimeVideos.filter((item) => item.approvalStatus === "approved");
+  return runtimeVideos.filter((v) => v.approvalStatus === "approved");
 }
 
 export async function getAllVideos() {
   if (hasSupabaseEnv()) {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase!
-      .from("videos")
-      .select("*")
-      .order("created_at", { ascending: false, nullsFirst: false });
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase!
+        .from("videos")
+        .select("*")
+        .order("created_at", { ascending: false, nullsFirst: false });
 
-    if (error) {
-      throw new Error(`Khong doc duoc videos tu Supabase: ${error.message}`);
-    }
+      if (error) {
+        console.error("[video-repository] getAllVideos Supabase error:", error.message);
+        return [...seedVideos];
+      }
 
-    const rows = (data ?? []).map((row) => mapSupabaseVideo(row));
-    if (rows.length === 0) {
+      const rows = (data ?? []).map((row) => mapSupabaseVideo(row));
+      return rows.length > 0 ? rows : [...seedVideos];
+    } catch (err) {
+      console.error("[video-repository] getAllVideos Connection error:", err);
       return [...seedVideos];
     }
-    return rows;
   }
 
   return [...runtimeVideos];
