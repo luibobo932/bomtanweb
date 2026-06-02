@@ -26,7 +26,7 @@ type CreateVideoInput = {
 };
 
 const SOURCE_HOSTS: Record<VideoSourceType, string[]> = {
-  tiktok: ["tiktok.com", "www.tiktok.com", "vm.tiktok.com"],
+  tiktok: ["tiktok.com", "www.tiktok.com", "vm.tiktok.com", "vt.tiktok.com"],
   youtube: ["youtube.com", "www.youtube.com", "youtu.be", "m.youtube.com"],
   facebook: ["facebook.com", "www.facebook.com", "fb.watch", "m.facebook.com"],
   cdn: [],

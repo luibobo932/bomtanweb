@@ -52,6 +52,8 @@ export function AdminVideoManager({
   const [form, setForm] = useState<FormState>(emptyForm);
   const [message, setMessage] = useState("");
   const [isPending, startTransition] = useTransition();
+  const [isFetchingOembed, setIsFetchingOembed] = useState(false);
+  const [oembedMessage, setOembedMessage] = useState("");
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -102,6 +104,43 @@ export function AdminVideoManager({
         setMessage(error instanceof Error ? error.message : "Khong tao duoc video.");
       }
     });
+  }
+
+  async function handleFetchTikTok() {
+    if (!form.videoUrl) {
+      setOembedMessage("Vui lòng nhập video URL trước.");
+      return;
+    }
+    setIsFetchingOembed(true);
+    setOembedMessage("");
+    try {
+      const res = await fetch(
+        `/api/videos/tiktok-oembed?url=${encodeURIComponent(form.videoUrl)}`,
+      );
+      const data = await res.json() as {
+        title?: string;
+        authorName?: string;
+        thumbnailUrl?: string;
+        html?: string;
+        embedUrl?: string;
+        error?: string;
+      };
+      if (!res.ok || data.error) {
+        throw new Error(data.error ?? "Không lấy được thông tin từ TikTok.");
+      }
+      setForm((prev) => ({
+        ...prev,
+        thumbnailUrl: data.thumbnailUrl ?? prev.thumbnailUrl,
+        embedCode: data.html ?? prev.embedCode,
+      }));
+      setOembedMessage(
+        `✓ Đã lấy thông tin từ TikTok. Tác giả: ${data.authorName ?? "?"} — Kiểm tra và chỉnh sửa các trường trước khi lưu.`,
+      );
+    } catch (err) {
+      setOembedMessage(err instanceof Error ? err.message : "Lỗi khi lấy dữ liệu từ TikTok.");
+    } finally {
+      setIsFetchingOembed(false);
+    }
   }
 
   async function updateStatus(id: string, approvalStatus: "approved" | "rejected") {
@@ -171,15 +210,32 @@ export function AdminVideoManager({
             value={form.summary}
             onChange={(event) => updateField("summary", event.target.value)}
           />
-          <input
-            className="field md:col-span-2"
-            placeholder="video_url: link TikTok / YouTube / Facebook / CDN"
-            value={form.videoUrl}
-            onChange={(event) => updateField("videoUrl", event.target.value)}
-          />
+          <div className="md:col-span-2 space-y-2">
+            <input
+              className="field w-full"
+              placeholder="video_url: link TikTok / YouTube / Facebook / CDN"
+              value={form.videoUrl}
+              onChange={(event) => updateField("videoUrl", event.target.value)}
+            />
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                className="secondary-btn text-sm"
+                onClick={handleFetchTikTok}
+                disabled={isFetchingOembed || !form.videoUrl}
+              >
+                {isFetchingOembed ? "Đang lấy..." : "Lấy thông tin từ TikTok"}
+              </button>
+              {oembedMessage && (
+                <span className={`text-xs ${oembedMessage.startsWith("✓") ? "text-green-400" : "text-red-400"}`}>
+                  {oembedMessage}
+                </span>
+              )}
+            </div>
+          </div>
           <textarea
             className="field min-h-[120px] md:col-span-2"
-            placeholder="embed_code (tuy chon, dung khi can nhung iframe co san)"
+            placeholder="embed_code (tự động điền khi nhấn 'Lấy thông tin từ TikTok')"
             value={form.embedCode}
             onChange={(event) => updateField("embedCode", event.target.value)}
           />
