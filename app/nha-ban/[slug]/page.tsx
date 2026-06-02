@@ -73,8 +73,36 @@ export default async function ListingDetailPage({
   const pageUrl = `${siteUrl}/nha-ban/${slug}`;
   const status = statusMap[listing.status] ?? { label: listing.status, color: "bg-zinc-700 text-white" };
 
+  const listingJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "RealEstateListing",
+    name: listing.title,
+    url: pageUrl,
+    description: listing.heroNote,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: listing.street,
+      addressLocality: listing.district,
+      addressRegion: "TP. Hồ Chí Minh",
+      addressCountry: "VN",
+    },
+    offers: {
+      "@type": "Offer",
+      price: listing.priceLabel,
+      priceCurrency: "VND",
+      availability:
+        listing.status === "con_ban"
+          ? "https://schema.org/InStock"
+          : "https://schema.org/SoldOut",
+    },
+  };
+
   return (
     <SiteShell>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(listingJsonLd) }}
+      />
       <div className="container-wide py-10 md:py-14">
         {/* Breadcrumb */}
         <nav className="mb-4 flex items-center gap-1.5 text-xs text-zinc-500">

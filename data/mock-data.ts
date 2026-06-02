@@ -65,6 +65,7 @@ export type ListingItem = {
   managerSlug: string;
   managerName: string;
   heroNote: string;
+  thumbnailUrl?: string;
   approvalStatus?: VideoApprovalStatus;
 };
 

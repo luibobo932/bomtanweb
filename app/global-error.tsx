@@ -32,10 +32,10 @@ export default function GlobalError({
       >
         <div style={{ fontSize: "3rem", fontWeight: 900, color: "#d84e1e" }}>!</div>
         <h1 style={{ fontSize: "1.5rem", fontWeight: 900, margin: 0 }}>
-          Ung dung gap loi nghiem trong
+          Ứng dụng gặp lỗi nghiêm trọng
         </h1>
         <p style={{ fontSize: "0.875rem", color: "#a1a1aa", maxWidth: 400, lineHeight: 1.7 }}>
-          Co su co khong mong muon. Vui long tai lai trang hoac lien he ho tro.
+          Có sự cố không mong muốn. Vui lòng tải lại trang hoặc liên hệ hỗ trợ.
         </p>
         <button
           type="button"
@@ -51,7 +51,7 @@ export default function GlobalError({
           }}
           onClick={reset}
         >
-          Thu lai
+          Thử lại
         </button>
       </body>
     </html>

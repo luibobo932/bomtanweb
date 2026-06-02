@@ -22,7 +22,7 @@ export function VideoEmbed({
   if (!video.embedUrl) {
     return (
       <div className={`flex h-full w-full items-center justify-center text-sm text-white/80 ${className}`}>
-        Chua co embed hop le
+        Chưa có embed hợp lệ
       </div>
     );
   }

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { ListingItem } from "@/data/mock-data";
 import { parseAreaM2, parsePriceTy } from "@/lib/filter-utils";
@@ -36,10 +37,20 @@ export function ListingCard({ listing }: { listing: ListingItem }) {
           <div className="absolute right-2.5 top-2.5 rounded-[var(--r-xs)] bg-black/70 px-2 py-0.5 text-[10px] text-white">
             {listing.houseType}
           </div>
-          {/* Placeholder icon */}
-          <div className="flex h-full items-center justify-center text-4xl text-zinc-700">
-            ⌂
-          </div>
+          {/* Thumbnail or placeholder */}
+          {listing.thumbnailUrl ? (
+            <Image
+              src={listing.thumbnailUrl}
+              alt={listing.title}
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              className="object-cover"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center text-4xl text-zinc-700">
+              ⌂
+            </div>
+          )}
         </div>
 
         {/* Content */}
