@@ -176,7 +176,8 @@ export async function getPublicVideos() {
     }
   }
 
-  return runtimeVideos.filter((v) => v.approvalStatus === "approved");
+  const base = process.env.NODE_ENV !== "production" ? runtimeVideos : seedVideos;
+  return base.filter((v) => v.approvalStatus === "approved");
 }
 
 export async function getAllVideos() {
@@ -201,7 +202,7 @@ export async function getAllVideos() {
     }
   }
 
-  return [...runtimeVideos];
+  return process.env.NODE_ENV !== "production" ? [...runtimeVideos] : [...seedVideos];
 }
 
 export async function createAdminVideo(params: CreateVideoParams) {

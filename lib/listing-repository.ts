@@ -137,7 +137,8 @@ export async function getPublicListings() {
     }
   }
 
-  return runtimeListings.filter(
+  const base = process.env.NODE_ENV !== "production" ? runtimeListings : listings;
+  return base.filter(
     (item) =>
       (item.approvalStatus ?? "approved") === "approved" &&
       ["con_ban", "dang_thuong_luong"].includes(item.status),
@@ -166,7 +167,7 @@ export async function getAllListings() {
     }
   }
 
-  return [...runtimeListings];
+  return process.env.NODE_ENV !== "production" ? [...runtimeListings] : [...listings];
 }
 
 export async function getListingBySlug(slug: string) {
