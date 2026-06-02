@@ -120,7 +120,15 @@ export async function getPublicListings() {
       throw new Error(`Khong doc duoc listings tu Supabase: ${error.message}`);
     }
 
-    return (data ?? []).map((row) => mapListingRow(row));
+    const rows = (data ?? []).map((row) => mapListingRow(row));
+    if (rows.length === 0) {
+      return listings.filter(
+        (item) =>
+          (item.approvalStatus ?? "approved") === "approved" &&
+          ["con_ban", "dang_thuong_luong"].includes(item.status),
+      );
+    }
+    return rows;
   }
 
   return runtimeListings.filter(
@@ -142,7 +150,11 @@ export async function getAllListings() {
       throw new Error(`Khong doc duoc tat ca listings: ${error.message}`);
     }
 
-    return (data ?? []).map((row) => mapListingRow(row));
+    const rows = (data ?? []).map((row) => mapListingRow(row));
+    if (rows.length === 0) {
+      return [...listings];
+    }
+    return rows;
   }
 
   return [...runtimeListings];

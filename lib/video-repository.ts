@@ -166,7 +166,11 @@ export async function getPublicVideos() {
       throw new Error(`Khong doc duoc videos tu Supabase: ${error.message}`);
     }
 
-    return (data ?? []).map((row) => mapSupabaseVideo(row));
+    const rows = (data ?? []).map((row) => mapSupabaseVideo(row));
+    if (rows.length === 0) {
+      return seedVideos.filter((item) => item.approvalStatus === "approved");
+    }
+    return rows;
   }
 
   return runtimeVideos.filter((item) => item.approvalStatus === "approved");
@@ -184,7 +188,11 @@ export async function getAllVideos() {
       throw new Error(`Khong doc duoc videos tu Supabase: ${error.message}`);
     }
 
-    return (data ?? []).map((row) => mapSupabaseVideo(row));
+    const rows = (data ?? []).map((row) => mapSupabaseVideo(row));
+    if (rows.length === 0) {
+      return [...seedVideos];
+    }
+    return rows;
   }
 
   return [...runtimeVideos];
