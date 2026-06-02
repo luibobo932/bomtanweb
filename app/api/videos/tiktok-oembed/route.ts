@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { resolveTikTokEmbedUrl } from "@/lib/tiktok-oembed";
 
 export const runtime = "nodejs";
 
@@ -40,10 +41,9 @@ export async function GET(req: NextRequest) {
 
     const data: TikTokOEmbedResponse = await res.json();
 
-    // Extract video ID from the html embed code
-    const videoIdMatch = data.html.match(/data-video-id="(\d+)"/);
+    const videoIdMatch = data.html?.match(/data-video-id="(\d+)"/);
     const videoId = videoIdMatch?.[1] ?? null;
-    const embedUrl = videoId ? `https://www.tiktok.com/embed/v2/${videoId}` : null;
+    const embedUrl = await resolveTikTokEmbedUrl(url);
 
     return NextResponse.json({
       title: data.title,
