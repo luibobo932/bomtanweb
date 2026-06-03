@@ -4,19 +4,11 @@ import { resolveTikTokEmbedUrl } from "@/lib/tiktok-oembed";
 export const runtime = "nodejs";
 
 type TikTokOEmbedResponse = {
-  version: string;
-  type: string;
-  title: string;
-  author_url: string;
-  author_name: string;
-  width: number;
-  height: number;
-  html: string;
-  thumbnail_url: string;
-  thumbnail_width: number;
-  thumbnail_height: number;
-  provider_name: string;
-  provider_url: string;
+  title?: string;
+  author_url?: string;
+  author_name?: string;
+  html?: string;
+  thumbnail_url?: string;
 };
 
 export async function GET(req: NextRequest) {
@@ -25,40 +17,42 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Thiếu tham số url" }, { status: 400 });
   }
 
+  // Resolve embedUrl using multi-strategy (redirect follow + oEmbed)
+  const embedUrl = await resolveTikTokEmbedUrl(url);
+
+  // Also try to get full oEmbed metadata (for admin auto-fill — title, thumbnail, html)
+  let oembedData: TikTokOEmbedResponse = {};
   try {
-    const oEmbedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`;
-    const res = await fetch(oEmbedUrl, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; BomTanBot/1.0)" },
-      next: { revalidate: 3600 },
-    });
-
-    if (!res.ok) {
-      return NextResponse.json(
-        { error: `TikTok oEmbed trả về lỗi: ${res.status}` },
-        { status: 502 },
-      );
+    const res = await fetch(
+      `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`,
+      {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        },
+        signal: AbortSignal.timeout(5000),
+      },
+    );
+    if (res.ok) {
+      oembedData = (await res.json()) as TikTokOEmbedResponse;
     }
+  } catch {
+    // oEmbed unavailable — embedUrl may still be resolved via redirect
+  }
 
-    const data: TikTokOEmbedResponse = await res.json();
-
-    const videoIdMatch = data.html?.match(/data-video-id="(\d+)"/);
-    const videoId = videoIdMatch?.[1] ?? null;
-    const embedUrl = await resolveTikTokEmbedUrl(url);
-
-    return NextResponse.json({
-      title: data.title,
-      authorName: data.author_name,
-      authorUrl: data.author_url,
-      thumbnailUrl: data.thumbnail_url,
-      html: data.html,
-      videoId,
-      embedUrl,
-    });
-  } catch (err) {
-    console.error("[tiktok-oembed] fetch failed:", err);
+  if (!embedUrl && !oembedData.html) {
     return NextResponse.json(
       { error: "Không thể lấy thông tin từ TikTok. Vui lòng thử lại." },
-      { status: 500 },
+      { status: 502 },
     );
   }
+
+  return NextResponse.json({
+    title: oembedData.title ?? null,
+    authorName: oembedData.author_name ?? null,
+    authorUrl: oembedData.author_url ?? null,
+    thumbnailUrl: oembedData.thumbnail_url ?? null,
+    html: oembedData.html ?? null,
+    embedUrl,
+  });
 }
