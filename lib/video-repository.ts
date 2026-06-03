@@ -10,6 +10,7 @@ import {
   createVideoRecord,
   mapSupabaseVideo,
   normalizeVideoForSupabase,
+  resolveExternalVideo,
 } from "@/lib/video-utils";
 
 type CreateVideoParams = {
@@ -155,18 +156,20 @@ async function resolveListingFromSupabase(listingId?: string | null) {
 
 export async function getPublicVideos() {
   if (hasSupabaseEnv()) {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase!
-      .from("videos")
-      .select("*")
-      .eq("approval_status", "approved")
-      .order("published_at", { ascending: false, nullsFirst: false });
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase!
+        .from("videos")
+        .select("*")
+        .eq("approval_status", "approved")
+        .order("published_at", { ascending: false, nullsFirst: false });
 
-    if (error) {
-      throw new Error(`Khong doc duoc videos tu Supabase: ${error.message}`);
+      if (error) throw new Error(error.message);
+      return (data ?? []).map((row) => mapSupabaseVideo(row));
+    } catch {
+      // Fallback về mock data khi Supabase không kết nối được (dev local)
+      return seedVideos.filter((item) => item.approvalStatus === "approved");
     }
-
-    return (data ?? []).map((row) => mapSupabaseVideo(row));
   }
 
   return runtimeVideos.filter((item) => item.approvalStatus === "approved");
@@ -174,17 +177,18 @@ export async function getPublicVideos() {
 
 export async function getAllVideos() {
   if (hasSupabaseEnv()) {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase!
-      .from("videos")
-      .select("*")
-      .order("created_at", { ascending: false, nullsFirst: false });
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase!
+        .from("videos")
+        .select("*")
+        .order("created_at", { ascending: false, nullsFirst: false });
 
-    if (error) {
-      throw new Error(`Khong doc duoc videos tu Supabase: ${error.message}`);
+      if (error) throw new Error(error.message);
+      return (data ?? []).map((row) => mapSupabaseVideo(row));
+    } catch {
+      return [...seedVideos];
     }
-
-    return (data ?? []).map((row) => mapSupabaseVideo(row));
   }
 
   return [...runtimeVideos];
@@ -198,12 +202,19 @@ export async function createAdminVideo(params: CreateVideoParams) {
     ? await resolveListingFromSupabase(params.listingId)
     : resolveListing(params.listingId);
 
+  // Resolve embed (xử lý cả link TikTok rút gọn qua oEmbed) trước khi tạo record.
+  const resolved = await resolveExternalVideo(params.videoUrl, params.embedCode);
+  if (!resolved.ok || !resolved.sourceType) {
+    throw new Error(resolved.message || "Nguon video khong hop le.");
+  }
+
   const video = createVideoRecord({
     title: params.title,
     summary: params.summary,
     videoUrl: params.videoUrl,
     embedCode: params.embedCode,
-    thumbnailUrl: params.thumbnailUrl,
+    // Nếu admin không nhập thumbnail, dùng thumbnail TikTok lấy từ oEmbed.
+    thumbnailUrl: params.thumbnailUrl?.trim() || resolved.thumbnailUrl,
     durationSeconds: params.durationSeconds,
     reviewerProfileId: reviewer.reviewerProfileId,
     reviewerSlug: reviewer.reviewerSlug,
@@ -216,6 +227,8 @@ export async function createAdminVideo(params: CreateVideoParams) {
     listingId: listing.listingId,
     listingSlug: listing.listingSlug,
     approvalStatus: params.role === "super_admin" ? "approved" : "pending",
+    embedUrl: resolved.embedUrl,
+    sourceType: resolved.sourceType,
   });
 
   if (hasSupabaseEnv()) {

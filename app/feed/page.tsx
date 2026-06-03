@@ -1,9 +1,13 @@
 import { SiteShell } from "@/components/site-shell";
 import { VideoFeedSection } from "@/components/video-feed-section";
+import { getPublicListings } from "@/lib/listing-repository";
 import { getPublicVideos } from "@/lib/video-repository";
 
 export default async function FeedPage() {
-  const videos = await getPublicVideos();
+  const [videos, listings] = await Promise.all([
+    getPublicVideos(),
+    getPublicListings(),
+  ]);
 
   return (
     <SiteShell>
@@ -19,7 +23,7 @@ export default async function FeedPage() {
         </div>
       </section>
 
-      <VideoFeedSection videos={videos} />
+      <VideoFeedSection videos={videos} listings={listings} />
     </SiteShell>
   );
 }

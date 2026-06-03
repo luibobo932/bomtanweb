@@ -11,5 +11,6 @@ export function getSupabasePublishableKey() {
 }
 
 export function hasSupabasePublicEnv() {
+  if (process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true") return false;
   return Boolean(getSupabaseUrl() && getSupabasePublishableKey());
 }

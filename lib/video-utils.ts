@@ -23,10 +23,23 @@ type CreateVideoInput = {
   listingId?: string | null;
   listingSlug?: string | null;
   approvalStatus?: VideoApprovalStatus;
+  // Embed đã được resolve trước (vd: link rút gọn TikTok qua oEmbed). Nếu có thì
+  // dùng thẳng, không cần suy luận lại bằng validateExternalVideoInput (đồng bộ).
+  embedUrl?: string;
+  sourceType?: VideoSourceType;
+};
+
+export type ResolvedExternalVideo = {
+  ok: boolean;
+  message: string;
+  sourceType: VideoSourceType | null;
+  embedUrl: string;
+  thumbnailUrl?: string;
+  canonicalUrl?: string;
 };
 
 const SOURCE_HOSTS: Record<VideoSourceType, string[]> = {
-  tiktok: ["tiktok.com", "www.tiktok.com", "vm.tiktok.com"],
+  tiktok: ["tiktok.com", "www.tiktok.com", "vm.tiktok.com", "vt.tiktok.com", "m.tiktok.com"],
   youtube: ["youtube.com", "www.youtube.com", "youtu.be", "m.youtube.com"],
   facebook: ["facebook.com", "www.facebook.com", "fb.watch", "m.facebook.com"],
   cdn: [],
@@ -89,6 +102,110 @@ function inferEmbedFromUrl(videoUrl: string, sourceType: VideoSourceType) {
   } catch {
     return "";
   }
+}
+
+async function fetchTikTokOEmbed(videoUrl: string) {
+  const endpoint = `https://www.tiktok.com/oembed?url=${encodeURIComponent(videoUrl)}`;
+  const res = await fetch(endpoint, {
+    headers: { Accept: "application/json" },
+    // Tránh treo request khi TikTok phản hồi chậm
+    signal: AbortSignal.timeout(8000),
+  });
+
+  if (!res.ok) {
+    return null;
+  }
+
+  const data = (await res.json()) as Record<string, unknown>;
+  const html = typeof data.html === "string" ? data.html : "";
+  const id =
+    (typeof data.embed_product_id === "string" && data.embed_product_id) ||
+    html.match(/data-video-id="(\d+)"/)?.[1] ||
+    html.match(/\/video\/(\d+)/)?.[1] ||
+    null;
+
+  return {
+    id,
+    thumbnailUrl: typeof data.thumbnail_url === "string" ? data.thumbnail_url : undefined,
+    canonicalUrl: html.match(/cite="([^"]+)"/)?.[1],
+  };
+}
+
+// Resolve embed cho video ngoài. Khác validateExternalVideoInput (đồng bộ) ở chỗ:
+// xử lý được link TikTok rút gọn (vm.tiktok.com/...) bằng cách gọi oEmbed API
+// server-side để lấy video id thật + thumbnail.
+export async function resolveExternalVideo(
+  videoUrl: string,
+  embedCode?: string,
+): Promise<ResolvedExternalVideo> {
+  const fail = (message: string): ResolvedExternalVideo => ({
+    ok: false,
+    message,
+    sourceType: null,
+    embedUrl: "",
+  });
+
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(videoUrl);
+  } catch {
+    return fail("Video URL khong hop le.");
+  }
+
+  if (!["https:", "http:"].includes(parsedUrl.protocol)) {
+    return fail("Chi chap nhan link http/https.");
+  }
+
+  const sourceType = detectVideoSourceType(videoUrl);
+
+  // Người dùng tự dán embed_code => ưu tiên tuyệt đối
+  if (embedCode?.trim()) {
+    const src = extractIframeSrc(embedCode.trim());
+    if (src) {
+      return { ok: true, message: "", sourceType, embedUrl: src };
+    }
+  }
+
+  if (sourceType === "tiktok") {
+    // Link đầy đủ .../video/{id} => parse đồng bộ, khỏi gọi mạng
+    const directId = parseTikTokId(parsedUrl);
+    if (directId) {
+      return {
+        ok: true,
+        message: "",
+        sourceType,
+        embedUrl: `https://www.tiktok.com/embed/v2/${directId}`,
+      };
+    }
+
+    // Link rút gọn (vm.tiktok.com, vt.tiktok.com) => dùng oEmbed
+    try {
+      const resolved = await fetchTikTokOEmbed(videoUrl);
+      if (resolved?.id) {
+        return {
+          ok: true,
+          message: "",
+          sourceType,
+          embedUrl: `https://www.tiktok.com/embed/v2/${resolved.id}`,
+          thumbnailUrl: resolved.thumbnailUrl,
+          canonicalUrl: resolved.canonicalUrl,
+        };
+      }
+    } catch {
+      // rơi xuống thông báo lỗi bên dưới
+    }
+
+    return fail(
+      "Khong resolve duoc video TikTok tu link nay. Kiem tra video co cong khai khong, hoac dung link day du dang .../video/{id}.",
+    );
+  }
+
+  const embedUrl = inferEmbedFromUrl(videoUrl, sourceType);
+  if (!embedUrl) {
+    return fail("Khong tao duoc embed cho video nay. Hay nhap them embed_code hop le.");
+  }
+
+  return { ok: true, message: "", sourceType, embedUrl };
 }
 
 export function formatDuration(seconds: number) {
@@ -159,9 +276,18 @@ export function validateExternalVideoInput(videoUrl: string, embedCode?: string)
 }
 
 export function createVideoRecord(input: CreateVideoInput): VideoItem {
-  const validation = validateExternalVideoInput(input.videoUrl, input.embedCode);
-  if (!validation.ok || !validation.sourceType) {
-    throw new Error(validation.message || "Nguon video khong hop le.");
+  let sourceType = input.sourceType;
+  let embedUrl = input.embedUrl;
+
+  // Nếu chưa được resolve sẵn (vd: qua resolveExternalVideo cho link rút gọn) thì
+  // suy luận đồng bộ tại đây.
+  if (!sourceType || !embedUrl) {
+    const validation = validateExternalVideoInput(input.videoUrl, input.embedCode);
+    if (!validation.ok || !validation.sourceType) {
+      throw new Error(validation.message || "Nguon video khong hop le.");
+    }
+    sourceType = validation.sourceType;
+    embedUrl = validation.embedUrl;
   }
 
   return {
@@ -180,10 +306,10 @@ export function createVideoRecord(input: CreateVideoInput): VideoItem {
     thumbnailUrl:
       input.thumbnailUrl?.trim() ||
       "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=900&q=80",
-    videoSourceType: validation.sourceType,
+    videoSourceType: sourceType,
     videoUrl: input.videoUrl.trim(),
     embedCode: input.embedCode?.trim() || undefined,
-    embedUrl: validation.embedUrl,
+    embedUrl,
     cta: input.listingSlug ? "Xem chi tiet can nha" : "Xem video",
     listingId: input.listingId ?? undefined,
     listingSlug: input.listingSlug ?? undefined,

@@ -27,13 +27,19 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      {
-        // Cache static assets aggressively
-        source: "/_next/static/(.*)",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-        ],
-      },
+      // Cache static assets aggressively — CHỈ ở production. Tên chunk production
+      // được hash theo nội dung nên "immutable" an toàn. Ở dev, header này khiến
+      // trình duyệt giữ chunk cũ vĩnh viễn (sửa code mà web không cập nhật), nên bỏ.
+      ...(process.env.NODE_ENV === "production"
+        ? [
+            {
+              source: "/_next/static/(.*)",
+              headers: [
+                { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+              ],
+            },
+          ]
+        : []),
     ];
   },
 };

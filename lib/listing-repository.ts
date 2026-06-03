@@ -108,19 +108,24 @@ function normalizeListingForSupabase(listing: ListingItem, managerProfileId?: st
 
 export async function getPublicListings() {
   if (hasSupabaseEnv()) {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase!
-      .from("listings")
-      .select("*")
-      .eq("approval_status", "approved")
-      .in("status", ["con_ban", "dang_thuong_luong"])
-      .order("created_at", { ascending: false });
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase!
+        .from("listings")
+        .select("*")
+        .eq("approval_status", "approved")
+        .in("status", ["con_ban", "dang_thuong_luong"])
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      throw new Error(`Khong doc duoc listings tu Supabase: ${error.message}`);
+      if (error) throw new Error(error.message);
+      return (data ?? []).map((row) => mapListingRow(row));
+    } catch {
+      return listings.filter(
+        (item) =>
+          (item.approvalStatus ?? "approved") === "approved" &&
+          ["con_ban", "dang_thuong_luong"].includes(item.status),
+      );
     }
-
-    return (data ?? []).map((row) => mapListingRow(row));
   }
 
   return runtimeListings.filter(
@@ -132,17 +137,18 @@ export async function getPublicListings() {
 
 export async function getAllListings() {
   if (hasSupabaseEnv()) {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase!
-      .from("listings")
-      .select("*")
-      .order("created_at", { ascending: false });
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase!
+        .from("listings")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      throw new Error(`Khong doc duoc tat ca listings: ${error.message}`);
+      if (error) throw new Error(error.message);
+      return (data ?? []).map((row) => mapListingRow(row));
+    } catch {
+      return [...listings];
     }
-
-    return (data ?? []).map((row) => mapListingRow(row));
   }
 
   return [...runtimeListings];
@@ -150,18 +156,19 @@ export async function getAllListings() {
 
 export async function getListingBySlug(slug: string) {
   if (hasSupabaseEnv()) {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase!
-      .from("listings")
-      .select("*")
-      .eq("slug", slug)
-      .maybeSingle();
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase!
+        .from("listings")
+        .select("*")
+        .eq("slug", slug)
+        .maybeSingle();
 
-    if (error) {
-      throw new Error(`Khong doc duoc listing theo slug: ${error.message}`);
+      if (error) throw new Error(error.message);
+      return data ? mapListingRow(data) : undefined;
+    } catch {
+      return listings.find((item) => item.slug === slug);
     }
-
-    return data ? mapListingRow(data) : undefined;
   }
 
   return runtimeListings.find((item) => item.slug === slug);
@@ -169,18 +176,19 @@ export async function getListingBySlug(slug: string) {
 
 export async function getListingsByManager(slug: string) {
   if (hasSupabaseEnv()) {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase!
-      .from("listings")
-      .select("*")
-      .eq("manager_slug", slug)
-      .order("created_at", { ascending: false });
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase!
+        .from("listings")
+        .select("*")
+        .eq("manager_slug", slug)
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      throw new Error(`Khong doc duoc listings theo manager: ${error.message}`);
+      if (error) throw new Error(error.message);
+      return (data ?? []).map((row) => mapListingRow(row));
+    } catch {
+      return listings.filter((item) => item.managerSlug === slug);
     }
-
-    return (data ?? []).map((row) => mapListingRow(row));
   }
 
   return runtimeListings.filter((item) => item.managerSlug === slug);
