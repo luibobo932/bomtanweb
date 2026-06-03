@@ -1,22 +1,18 @@
 import { SiteShell } from "@/components/site-shell";
 import { VideoFeedSection } from "@/components/video-feed-section";
 import { getPublicVideos } from "@/lib/video-repository";
-import { resolveTikTokNativeEmbed } from "@/lib/tiktok-oembed";
+import { resolveTikTokEmbedUrl } from "@/lib/tiktok-oembed";
 
 export default async function FeedPage() {
   const rawVideos = await getPublicVideos();
 
   const videos = await Promise.all(
     rawVideos.map(async (video) => {
-      if (
-        video.videoSourceType !== "tiktok" ||
-        video.embedCode?.includes("tiktok-embed") ||
-        video.embedUrl
-      ) {
+      if (video.videoSourceType !== "tiktok" || video.embedUrl) {
         return video;
       }
-      const embed = await resolveTikTokNativeEmbed(video.videoUrl);
-      return embed ? { ...video, embedUrl: embed.embedUrl, embedCode: embed.embedCode } : video;
+      const embedUrl = await resolveTikTokEmbedUrl(video.videoUrl);
+      return embedUrl ? { ...video, embedUrl } : video;
     }),
   );
 

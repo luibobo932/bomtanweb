@@ -1,17 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { VideoItem } from "@/data/mock-data";
 
-type ResolvedEmbed = { embedUrl?: string; html?: string } | null;
+type ResolvedEmbed = { embedUrl?: string } | null;
 
 function useTikTokEmbed(video: VideoItem): ResolvedEmbed {
   const [resolved, setResolved] = useState<ResolvedEmbed>(null);
 
   const needsResolution =
-    video.videoSourceType === "tiktok" &&
-    !video.embedCode?.includes("tiktok-embed") &&
-    !video.embedUrl;
+    video.videoSourceType === "tiktok" && !video.embedUrl;
 
   useEffect(() => {
     if (!needsResolution) return;
@@ -19,41 +17,78 @@ function useTikTokEmbed(video: VideoItem): ResolvedEmbed {
 
     fetch(`/api/videos/tiktok-oembed?url=${encodeURIComponent(video.videoUrl)}`)
       .then((r) => r.json())
-      .then((data: { embedUrl?: string; html?: string }) => {
+      .then((data: { embedUrl?: string }) => {
         if (!cancelled) setResolved(data);
       })
       .catch(() => {
         if (!cancelled) setResolved({});
       });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [video.videoUrl, needsResolution]);
 
   return needsResolution ? resolved : null;
 }
 
-function TikTokNativeEmbed({ html, className }: { html: string; className: string }) {
-  const containerRef = useRef<HTMLDivElement>(null);
+function TikTokPlayer({
+  embedUrl,
+  title,
+  className,
+}: {
+  embedUrl: string;
+  title: string;
+  className: string;
+}) {
+  return (
+    <iframe
+      className={`h-full w-full border-0 ${className}`}
+      src={`${embedUrl}?autoplay=1`}
+      title={title}
+      allow="autoplay; fullscreen; accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowFullScreen
+    />
+  );
+}
 
-  useEffect(() => {
-    if (!containerRef.current) return;
-    // Force embed.js to re-run so it processes the blockquote we just inserted.
-    // Remove any cached instance first so the script re-executes each mount.
-    const existing = document.getElementById("tt-embed-js");
-    if (existing) existing.remove();
-    const s = document.createElement("script");
-    s.id = "tt-embed-js";
-    s.src = "https://www.tiktok.com/embed.js";
-    s.async = true;
-    document.body.appendChild(s);
-  }, [html]);
+function TikTokClickToPlay({
+  embedUrl,
+  thumbnailUrl,
+  title,
+  className,
+}: {
+  embedUrl: string;
+  thumbnailUrl: string;
+  title: string;
+  className: string;
+}) {
+  const [playing, setPlaying] = useState(false);
+
+  if (playing) {
+    return <TikTokPlayer embedUrl={embedUrl} title={title} className={className} />;
+  }
 
   return (
     <div
-      ref={containerRef}
-      className={`flex h-full w-full items-center justify-center overflow-auto ${className}`}
+      role="button"
+      tabIndex={0}
+      aria-label={`Xem video: ${title}`}
+      className={`relative h-full w-full cursor-pointer overflow-hidden ${className}`}
+      onClick={() => setPlaying(true)}
+      onKeyDown={(e) => e.key === "Enter" && setPlaying(true)}
     >
-      <div className="w-full" dangerouslySetInnerHTML={{ __html: html }} />
+      <img src={thumbnailUrl} alt={title} className="h-full w-full object-cover" />
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/40">
+        <div className="rounded-full bg-black/60 p-4 ring-2 ring-white/20 backdrop-blur-sm transition-transform hover:scale-105 active:scale-95">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <polygon points="6,2 26,14 6,26" fill="white" />
+          </svg>
+        </div>
+        <span className="rounded-full bg-black/50 px-3 py-1 text-xs font-medium text-white/90">
+          Nhấn để xem video
+        </span>
+      </div>
     </div>
   );
 }
@@ -79,30 +114,47 @@ export function VideoEmbed({
     );
   }
 
-  // Native TikTok embed (blockquote + embed.js) — plays inline on both desktop and mobile
-  const tiktokHtml = video.embedCode?.includes("tiktok-embed")
-    ? video.embedCode
-    : resolved?.html?.includes("tiktok-embed")
-    ? resolved.html
-    : null;
-
-  if (video.videoSourceType === "tiktok" && tiktokHtml) {
-    return <TikTokNativeEmbed html={tiktokHtml} className={className} />;
+  // Non-TikTok: YouTube, Facebook (admin sets embedUrl/embedCode)
+  if (video.videoSourceType !== "tiktok") {
+    const embedUrl = video.embedUrl;
+    if (!embedUrl) {
+      return (
+        <div
+          className={`flex h-full w-full items-center justify-center text-sm text-white/80 ${className}`}
+        >
+          Chưa có embed hợp lệ
+        </div>
+      );
+    }
+    return (
+      <iframe
+        className={`h-full w-full border-0 ${className}`}
+        src={embedUrl}
+        title={video.title}
+        loading="lazy"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowFullScreen
+        referrerPolicy="strict-origin-when-cross-origin"
+      />
+    );
   }
 
+  // TikTok — click-to-play pattern
   const embedUrl = video.embedUrl || resolved?.embedUrl;
 
-  // Short URL still resolving
-  if (!embedUrl && video.videoSourceType === "tiktok" && resolved === null) {
+  // Still resolving short URL client-side
+  if (!embedUrl && resolved === null) {
     return (
-      <div className={`flex h-full w-full items-center justify-center text-sm text-white/60 ${className}`}>
+      <div
+        className={`flex h-full w-full items-center justify-center text-sm text-white/60 ${className}`}
+      >
         Đang tải video...
       </div>
     );
   }
 
-  // oEmbed resolved nhưng không có URL lẫn HTML → TikTok có thể bị block
-  if (!embedUrl && video.videoSourceType === "tiktok") {
+  // Resolution failed — link to TikTok directly
+  if (!embedUrl) {
     return (
       <a
         href={video.videoUrl}
@@ -126,23 +178,12 @@ export function VideoEmbed({
     );
   }
 
-  if (!embedUrl) {
-    return (
-      <div className={`flex h-full w-full items-center justify-center text-sm text-white/80 ${className}`}>
-        Chưa có embed hợp lệ
-      </div>
-    );
-  }
-
   return (
-    <iframe
-      className={`h-full w-full border-0 ${className}`}
-      src={embedUrl}
+    <TikTokClickToPlay
+      embedUrl={embedUrl}
+      thumbnailUrl={video.thumbnailUrl}
       title={video.title}
-      loading="lazy"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-      allowFullScreen
-      referrerPolicy="strict-origin-when-cross-origin"
+      className={className}
     />
   );
 }
