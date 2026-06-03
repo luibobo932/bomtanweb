@@ -1,9 +1,11 @@
+type VideoResolution = { id: string; canonicalUrl: string };
+
 function embedUrlFromId(videoId: string) {
   return `https://www.tiktok.com/embed/v2/${videoId}`;
 }
 
-function nativeEmbedFromId(videoId: string, originalUrl: string): string {
-  return `<blockquote class="tiktok-embed" cite="${originalUrl}" data-video-id="${videoId}" style="max-width:605px;min-width:325px"><section></section></blockquote>`;
+function nativeEmbedHtml(videoId: string, canonicalUrl: string): string {
+  return `<blockquote class="tiktok-embed" cite="${canonicalUrl}" data-video-id="${videoId}" style="max-width:605px;min-width:325px"><section></section></blockquote>`;
 }
 
 function extractIdFromHtml(html: string): string | null {
@@ -16,12 +18,18 @@ function extractIdFromHtml(html: string): string | null {
   return null;
 }
 
-async function resolveVideoId(videoUrl: string): Promise<string | null> {
+async function resolveVideo(videoUrl: string): Promise<VideoResolution | null> {
   // Strategy 1: Full URL already contains video ID — no network call needed
   const directId = videoUrl.match(/\/video\/(\d+)/)?.[1];
-  if (directId) return directId;
+  if (directId) {
+    const canonical = videoUrl.startsWith("https://www.tiktok.com")
+      ? videoUrl
+      : `https://www.tiktok.com/video/${directId}`;
+    return { id: directId, canonicalUrl: canonical };
+  }
 
   // Strategy 2: Follow HTTP redirect from short URL (e.g. vt.tiktok.com/ZSxwxHuGG/)
+  // Captures the full canonical URL https://www.tiktok.com/@user/video/{id}
   try {
     const r = await fetch(videoUrl, {
       redirect: "follow",
@@ -37,7 +45,10 @@ async function resolveVideoId(videoUrl: string): Promise<string | null> {
     const idFromRedirect = finalUrl.match(/\/video\/(\d+)/)?.[1];
     if (idFromRedirect) {
       console.log(`[tiktok] resolved ${videoUrl} → ${finalUrl} (id: ${idFromRedirect})`);
-      return idFromRedirect;
+      const canonical = finalUrl.startsWith("https://www.tiktok.com")
+        ? finalUrl
+        : `https://www.tiktok.com/video/${idFromRedirect}`;
+      return { id: idFromRedirect, canonicalUrl: canonical };
     }
   } catch (err) {
     console.warn("[tiktok] redirect follow failed:", err);
@@ -58,10 +69,11 @@ async function resolveVideoId(videoUrl: string): Promise<string | null> {
     );
     if (res.ok) {
       const data = (await res.json()) as { html?: string };
-      const idFromOembed = data.html ? extractIdFromHtml(data.html) : null;
-      if (idFromOembed) {
-        console.log(`[tiktok] oEmbed resolved id: ${idFromOembed}`);
-        return idFromOembed;
+      const id = data.html ? extractIdFromHtml(data.html) : null;
+      const citeMatch = data.html?.match(/cite=["'](https:\/\/www\.tiktok\.com[^"']+\/video\/\d+)/)?.[1];
+      if (id) {
+        console.log(`[tiktok] oEmbed resolved id: ${id}`);
+        return { id, canonicalUrl: citeMatch ?? `https://www.tiktok.com/video/${id}` };
       }
     } else {
       console.warn(`[tiktok] oEmbed returned ${res.status}`);
@@ -75,17 +87,17 @@ async function resolveVideoId(videoUrl: string): Promise<string | null> {
 }
 
 export async function resolveTikTokEmbedUrl(videoUrl: string): Promise<string | null> {
-  const videoId = await resolveVideoId(videoUrl);
-  return videoId ? embedUrlFromId(videoId) : null;
+  const resolved = await resolveVideo(videoUrl);
+  return resolved ? embedUrlFromId(resolved.id) : null;
 }
 
 export async function resolveTikTokNativeEmbed(
   videoUrl: string,
 ): Promise<{ embedUrl: string; embedCode: string } | null> {
-  const videoId = await resolveVideoId(videoUrl);
-  if (!videoId) return null;
+  const resolved = await resolveVideo(videoUrl);
+  if (!resolved) return null;
   return {
-    embedUrl: embedUrlFromId(videoId),
-    embedCode: nativeEmbedFromId(videoId, videoUrl),
+    embedUrl: embedUrlFromId(resolved.id),
+    embedCode: nativeEmbedHtml(resolved.id, resolved.canonicalUrl),
   };
 }
