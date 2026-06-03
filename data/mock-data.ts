@@ -358,7 +358,7 @@ export const videos: VideoItem[] = [
     durationSeconds: 60,
     thumbnailUrl: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=900&q=80",
     videoSourceType: "tiktok",
-    videoUrl: "https://vt.tiktok.com/ZSxwxHuGG/",
+    videoUrl: "https://vt.tiktok.com/ZSxKTodon/",
     embedUrl: "",
     cta: "Xem video",
     contentType: "review_nha",
