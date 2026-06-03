@@ -2,26 +2,26 @@ function embedUrlFromId(videoId: string) {
   return `https://www.tiktok.com/embed/v2/${videoId}`;
 }
 
+function nativeEmbedFromId(videoId: string, originalUrl: string): string {
+  return `<blockquote class="tiktok-embed" cite="${originalUrl}" data-video-id="${videoId}" style="max-width:605px;min-width:325px"><section></section></blockquote>`;
+}
+
 function extractIdFromHtml(html: string): string | null {
-  // Try data-video-id attribute (both quote styles)
   const fromAttr = html.match(/data-video-id=["'](\d+)["']/)?.[1];
   if (fromAttr) return fromAttr;
-  // Try cite attribute: cite="https://www.tiktok.com/@user/video/1234567890"
   const fromCite = html.match(/cite=["'][^"']*\/video\/(\d+)/)?.[1];
   if (fromCite) return fromCite;
-  // Try any /video/{id} pattern in the html
   const fromPath = html.match(/\/video\/(\d{15,20})/)?.[1];
   if (fromPath) return fromPath;
   return null;
 }
 
-export async function resolveTikTokEmbedUrl(videoUrl: string): Promise<string | null> {
+async function resolveVideoId(videoUrl: string): Promise<string | null> {
   // Strategy 1: Full URL already contains video ID — no network call needed
   const directId = videoUrl.match(/\/video\/(\d+)/)?.[1];
-  if (directId) return embedUrlFromId(directId);
+  if (directId) return directId;
 
   // Strategy 2: Follow HTTP redirect from short URL (e.g. vt.tiktok.com/ZSxwxHuGG/)
-  // Short URLs simply redirect to tiktok.com/@user/video/{id} — no API key needed
   try {
     const r = await fetch(videoUrl, {
       redirect: "follow",
@@ -37,7 +37,7 @@ export async function resolveTikTokEmbedUrl(videoUrl: string): Promise<string | 
     const idFromRedirect = finalUrl.match(/\/video\/(\d+)/)?.[1];
     if (idFromRedirect) {
       console.log(`[tiktok] resolved ${videoUrl} → ${finalUrl} (id: ${idFromRedirect})`);
-      return embedUrlFromId(idFromRedirect);
+      return idFromRedirect;
     }
   } catch (err) {
     console.warn("[tiktok] redirect follow failed:", err);
@@ -61,7 +61,7 @@ export async function resolveTikTokEmbedUrl(videoUrl: string): Promise<string | 
       const idFromOembed = data.html ? extractIdFromHtml(data.html) : null;
       if (idFromOembed) {
         console.log(`[tiktok] oEmbed resolved id: ${idFromOembed}`);
-        return embedUrlFromId(idFromOembed);
+        return idFromOembed;
       }
     } else {
       console.warn(`[tiktok] oEmbed returned ${res.status}`);
@@ -72,4 +72,20 @@ export async function resolveTikTokEmbedUrl(videoUrl: string): Promise<string | 
 
   console.warn(`[tiktok] all strategies failed for ${videoUrl}`);
   return null;
+}
+
+export async function resolveTikTokEmbedUrl(videoUrl: string): Promise<string | null> {
+  const videoId = await resolveVideoId(videoUrl);
+  return videoId ? embedUrlFromId(videoId) : null;
+}
+
+export async function resolveTikTokNativeEmbed(
+  videoUrl: string,
+): Promise<{ embedUrl: string; embedCode: string } | null> {
+  const videoId = await resolveVideoId(videoUrl);
+  if (!videoId) return null;
+  return {
+    embedUrl: embedUrlFromId(videoId),
+    embedCode: nativeEmbedFromId(videoId, videoUrl),
+  };
 }

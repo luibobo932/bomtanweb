@@ -1,7 +1,6 @@
 "use client";
 
-import Script from "next/script";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { VideoItem } from "@/data/mock-data";
 
 type ResolvedEmbed = { embedUrl?: string; html?: string } | null;
@@ -33,6 +32,32 @@ function useTikTokEmbed(video: VideoItem): ResolvedEmbed {
   return needsResolution ? resolved : null;
 }
 
+function TikTokNativeEmbed({ html, className }: { html: string; className: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    // Force embed.js to re-run so it processes the blockquote we just inserted.
+    // Remove any cached instance first so the script re-executes each mount.
+    const existing = document.getElementById("tt-embed-js");
+    if (existing) existing.remove();
+    const s = document.createElement("script");
+    s.id = "tt-embed-js";
+    s.src = "https://www.tiktok.com/embed.js";
+    s.async = true;
+    document.body.appendChild(s);
+  }, [html]);
+
+  return (
+    <div
+      ref={containerRef}
+      className={`flex h-full w-full items-center justify-center overflow-auto ${className}`}
+    >
+      <div className="w-full" dangerouslySetInnerHTML={{ __html: html }} />
+    </div>
+  );
+}
+
 export function VideoEmbed({
   video,
   className = "",
@@ -54,20 +79,17 @@ export function VideoEmbed({
     );
   }
 
-  // Native embed only when admin explicitly set the embed code (not auto-resolved)
-  // Auto-resolved TikTok uses iframe (embedUrl) to avoid embed.js timing issues
-  const adminEmbedHtml = video.embedCode?.includes("tiktok-embed") ? video.embedCode : null;
+  // Native TikTok embed (blockquote + embed.js) — plays inline on both desktop and mobile
+  const tiktokHtml = video.embedCode?.includes("tiktok-embed")
+    ? video.embedCode
+    : resolved?.html?.includes("tiktok-embed")
+    ? resolved.html
+    : null;
 
-  if (video.videoSourceType === "tiktok" && adminEmbedHtml) {
-    return (
-      <div className={`flex h-full w-full items-center justify-center overflow-auto ${className}`}>
-        <div className="w-full" dangerouslySetInnerHTML={{ __html: adminEmbedHtml }} />
-        <Script src="https://www.tiktok.com/embed.js" strategy="lazyOnload" />
-      </div>
-    );
+  if (video.videoSourceType === "tiktok" && tiktokHtml) {
+    return <TikTokNativeEmbed html={tiktokHtml} className={className} />;
   }
 
-  // Prefer embedUrl (iframe) — works immediately without embed.js
   const embedUrl = video.embedUrl || resolved?.embedUrl;
 
   // Short URL still resolving
