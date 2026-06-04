@@ -34,17 +34,19 @@ export function SiteShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="site-shell">
-      <header className="sticky top-0 z-40 border-b border-[#2e2e28] bg-[#0a0a0a]">
-        <div className="container-shell flex h-[52px] items-center justify-between gap-3">
+      <header className="sticky top-0 z-40 border-b border-white/[0.07] bg-[#050508]/85 backdrop-blur-xl">
+        <div className="container-shell flex h-[56px] items-center justify-between gap-3">
           <Link
             href="/"
-            className="text-[18px] font-bold tracking-[-0.03em] text-[var(--brand)]"
+            className="flex items-center gap-0 text-[19px] font-black tracking-[-0.04em]"
           >
-            Nhà<span className="font-light text-[var(--foreground)]">Phố</span>SG
+            <span className="text-[var(--brand)]">Nhà</span>
+            <span className="text-white/85 font-light">Phố</span>
+            <span className="text-white">SG</span>
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden items-center gap-1 md:flex">
+          <nav className="hidden items-center gap-0.5 md:flex">
             {navItems.map((item) => {
               const active =
                 item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
@@ -52,12 +54,15 @@ export function SiteShell({ children }: { children: ReactNode }) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`rounded-[6px] px-3 py-2 text-[13px] transition ${
+                  className={`relative rounded-[7px] px-3 py-2 text-[13px] font-medium transition-all duration-150 ${
                     active
-                      ? "bg-[#1e1e1e] text-white"
-                      : "text-zinc-400 hover:bg-[#1e1e1e] hover:text-white"
+                      ? "bg-white/[0.08] text-white"
+                      : "text-zinc-400 hover:bg-white/[0.05] hover:text-white/90"
                   }`}
                 >
+                  {active && (
+                    <span className="absolute bottom-1 left-1/2 h-[2px] w-3 -translate-x-1/2 rounded-full bg-[var(--brand)]" />
+                  )}
                   {item.label}
                 </Link>
               );
@@ -103,7 +108,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
       {/* Mobile menu overlay */}
       {menuOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/60 md:hidden"
+          className="fixed inset-0 z-30 bg-black/70 backdrop-blur-sm md:hidden"
           onClick={() => setMenuOpen(false)}
           aria-hidden="true"
         />
@@ -111,7 +116,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
 
       {/* Mobile menu drawer */}
       <div
-        className={`fixed left-0 right-0 top-[52px] z-30 border-b border-[#2e2e28] bg-[#0d0d0d] transition-all duration-200 md:hidden ${
+        className={`fixed left-0 right-0 top-[56px] z-30 border-b border-white/[0.07] bg-[#050508]/95 backdrop-blur-xl transition-all duration-200 md:hidden ${
           menuOpen
             ? "translate-y-0 opacity-100"
             : "pointer-events-none -translate-y-2 opacity-0"
