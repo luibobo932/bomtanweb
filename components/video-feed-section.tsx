@@ -73,10 +73,10 @@ function FeedCard({ video }: { video: VideoItem }) {
   }
 
   return (
-    <article className="overflow-hidden rounded-[20px] border border-[var(--border)] bg-[var(--s2)]">
+    <article className="overflow-hidden rounded-[20px] border border-[var(--border)] border-t-[var(--border-bright)] bg-gradient-to-b from-[var(--s3)] to-[var(--s2)]">
       {/* Header */}
       <div className="flex items-center gap-3 border-b border-[var(--border)] px-4 py-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--brand)] text-sm font-bold text-white">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--brand)] to-[var(--brand-deep)] text-[13px] font-bold text-white">
           {video.reviewerName
             .split(" ")
             .map((p) => p[0])
@@ -84,16 +84,16 @@ function FeedCard({ video }: { video: VideoItem }) {
             .slice(0, 2)}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center text-sm font-semibold text-white">
+          <div className="flex items-center text-[13px] font-semibold text-white">
             <span className="truncate">{video.reviewerName}</span>
             {isVerified && <VerifiedBadge />}
           </div>
-          <div className="text-xs text-zinc-500">
+          <div className="text-[11px] text-zinc-500">
             {video.contentType === "review_nha" ? "Review nhà" : "Kiến thức"}
           </div>
         </div>
-        <div className="rounded-[var(--r-full)] bg-[var(--s4)] px-2.5 py-1 text-xs text-zinc-400">
-          {video.viewCountLabel} views
+        <div className="rounded-full border border-[var(--border)] bg-[var(--s4)] px-2.5 py-1 text-[11px] text-zinc-500">
+          {video.viewCountLabel} lượt xem
         </div>
       </div>
 
@@ -113,14 +113,14 @@ function FeedCard({ video }: { video: VideoItem }) {
 
         {/* Chips */}
         <div className="chip-row mt-3">
-          <span className="chip">📍 {video.districtTag}</span>
-          <span className="chip">💰 {video.priceTag}</span>
+          <span className="chip">{video.districtTag}</span>
+          <span className="chip">{video.priceTag}</span>
           <span className="chip">{video.houseTypeTag}</span>
         </div>
 
         {/* Actions */}
         <div className="mt-4 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 text-sm text-zinc-400">
+          <div className="flex items-center gap-3 text-[13px] text-zinc-500">
             <button
               type="button"
               onClick={() => {
@@ -128,24 +128,23 @@ function FeedCard({ video }: { video: VideoItem }) {
                 setAnimating(true);
               }}
               onAnimationEnd={() => setAnimating(false)}
-              className={`${animating ? "animate-like" : ""} ${liked ? "text-[var(--brand)]" : ""} transition-colors`}
+              className={`flex items-center gap-1 transition-colors ${animating ? "animate-like" : ""} ${liked ? "text-[var(--brand)]" : "hover:text-white"}`}
             >
-              ♥ {video.likeCountLabel}
-            </button>
-            <button
-              type="button"
-              className="transition-colors hover:text-white"
-            >
-              💬 {video.commentCountLabel}
+              <svg width="14" height="14" viewBox="0 0 16 16" fill={liked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5">
+                <path d="M8 13.5S2 9.8 2 5.5A3.5 3.5 0 0 1 8 3a3.5 3.5 0 0 1 6 2c0 4.3-6 8-6 8z" />
+              </svg>
+              {video.likeCountLabel}
             </button>
             <button
               type="button"
               onClick={toggleSave}
               title={saved ? "Bỏ lưu video" : "Lưu video này"}
-              className={`transition-colors ${saved ? "text-[var(--brand)]" : "hover:text-white"}`}
+              className={`flex items-center gap-1 transition-colors ${saved ? "text-[var(--brand)]" : "hover:text-white"}`}
             >
-              {saved ? "🔖" : "🔖"}{" "}
-              <span className="text-xs">{saved ? "Đã lưu" : "Lưu"}</span>
+              <svg width="13" height="14" viewBox="0 0 14 16" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5">
+                <path d="M2 2h10v13l-5-3-5 3V2z" />
+              </svg>
+              <span>{saved ? "Đã lưu" : "Lưu"}</span>
             </button>
           </div>
 
