@@ -100,7 +100,7 @@ function FeedCard({ video }: { video: VideoItem }) {
       {/* Video */}
       <div
         className="relative w-full overflow-hidden bg-[var(--s5)]"
-        style={{ aspectRatio: "9/16", maxHeight: "65vh" }}
+        style={{ aspectRatio: "9/16", maxHeight: "65vh", minHeight: "320px" }}
       >
         <VideoEmbed video={video} />
       </div>

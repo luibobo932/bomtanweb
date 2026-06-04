@@ -35,15 +35,13 @@ function useTikTokEmbed(video: VideoItem): ResolvedEmbed {
 function TikTokPlayer({
   embedUrl,
   title,
-  className,
 }: {
   embedUrl: string;
   title: string;
-  className: string;
 }) {
   return (
     <iframe
-      className={`h-full w-full border-0 ${className}`}
+      className="absolute inset-0 h-full w-full border-0"
       src={`${embedUrl}?autoplay=1`}
       title={title}
       allow="autoplay; fullscreen; accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -56,17 +54,15 @@ function TikTokClickToPlay({
   embedUrl,
   thumbnailUrl,
   title,
-  className,
 }: {
   embedUrl: string;
   thumbnailUrl: string;
   title: string;
-  className: string;
 }) {
   const [playing, setPlaying] = useState(false);
 
   if (playing) {
-    return <TikTokPlayer embedUrl={embedUrl} title={title} className={className} />;
+    return <TikTokPlayer embedUrl={embedUrl} title={title} />;
   }
 
   return (
@@ -74,7 +70,7 @@ function TikTokClickToPlay({
       role="button"
       tabIndex={0}
       aria-label={`Xem video: ${title}`}
-      className={`relative h-full w-full cursor-pointer overflow-hidden ${className}`}
+      className="absolute inset-0 cursor-pointer overflow-hidden"
       onClick={() => setPlaying(true)}
       onKeyDown={(e) => e.key === "Enter" && setPlaying(true)}
     >
@@ -145,9 +141,7 @@ export function VideoEmbed({
   // Still resolving short URL client-side
   if (!embedUrl && resolved === null) {
     return (
-      <div
-        className={`flex h-full w-full items-center justify-center text-sm text-white/60 ${className}`}
-      >
+      <div className={`flex h-full w-full items-center justify-center text-sm text-white/60 ${className}`}>
         Đang tải video...
       </div>
     );
@@ -162,11 +156,7 @@ export function VideoEmbed({
         rel="noreferrer"
         className={`relative flex h-full w-full items-center justify-center overflow-hidden ${className}`}
       >
-        <img
-          src={video.thumbnailUrl}
-          alt={video.title}
-          className="h-full w-full object-cover"
-        />
+        <img src={video.thumbnailUrl} alt={video.title} className="h-full w-full object-cover" />
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/50">
           <svg width="48" height="48" viewBox="0 0 48 48" fill="none" className="opacity-90">
             <circle cx="24" cy="24" r="24" fill="rgba(0,0,0,0.5)" />
@@ -179,11 +169,12 @@ export function VideoEmbed({
   }
 
   return (
-    <TikTokClickToPlay
-      embedUrl={embedUrl}
-      thumbnailUrl={video.thumbnailUrl}
-      title={video.title}
-      className={className}
-    />
+    <div className={`relative h-full w-full ${className}`}>
+      <TikTokClickToPlay
+        embedUrl={embedUrl}
+        thumbnailUrl={video.thumbnailUrl}
+        title={video.title}
+      />
+    </div>
   );
 }
