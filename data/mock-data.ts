@@ -65,6 +65,7 @@ export type ListingItem = {
   managerSlug: string;
   managerName: string;
   heroNote: string;
+  thumbnailUrl?: string;
   approvalStatus?: VideoApprovalStatus;
 };
 
@@ -305,7 +306,7 @@ export const videos: VideoItem[] = [
     listingSlug: "hem-xe-hoi-nguyen-dinh-chieu-q3",
     listingId: "L-Q3-001",
     contentType: "review_nha",
-    approvalStatus: "approved",
+    approvalStatus: "pending",
     viewCountLabel: "12.4K",
     likeCountLabel: "12.4K",
     commentCountLabel: "284",
@@ -331,7 +332,7 @@ export const videos: VideoItem[] = [
     listingSlug: "mat-tien-su-van-hanh-q10",
     listingId: "L-Q10-002",
     contentType: "review_nha",
-    approvalStatus: "approved",
+    approvalStatus: "pending",
     viewCountLabel: "8.7K",
     likeCountLabel: "8.7K",
     commentCountLabel: "146",
@@ -355,10 +356,35 @@ export const videos: VideoItem[] = [
     videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4",
     cta: "Xem nhà",
     contentType: "kien_thuc",
-    approvalStatus: "approved",
+    approvalStatus: "pending",
     viewCountLabel: "22.1K",
     likeCountLabel: "22.1K",
     commentCountLabel: "512",
+    shareCountLabel: "Share",
+  },
+  {
+    id: "vid-004",
+    title: "Mặt tiền Nguyễn Tri Phương, Q10 | 3.9×22m | Net 80tr/tháng",
+    slug: "mat-tien-nguyen-tri-phuong-q10-net-80tr",
+    districtTag: "Quận 10",
+    streetTag: "Nguyễn Tri Phương",
+    priceTag: "20-30 tỷ",
+    houseTypeTag: "Mặt tiền",
+    reviewerProfileId: "minh-anh",
+    reviewerSlug: "minh-anh",
+    reviewerName: "Trần Minh Anh",
+    summary: "Nhà mặt tiền Nguyễn Tri Phương, Quận 10. Diện tích 3.9×22m, hầm + lửng + 4 lầu. Dòng tiền cho thuê trên 100tr/tháng, net ~80tr. Sổ hồng riêng.",
+    durationSeconds: 60,
+    thumbnailUrl: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=900&q=80",
+    videoSourceType: "tiktok",
+    videoUrl: "https://www.tiktok.com/@batdongsanquan5/video/7646611439175650581",
+    embedUrl: "https://www.tiktok.com/embed/v2/7646611439175650581",
+    cta: "Xem video",
+    contentType: "review_nha",
+    approvalStatus: "approved",
+    viewCountLabel: "—",
+    likeCountLabel: "—",
+    commentCountLabel: "—",
     shareCountLabel: "Share",
   },
 ];

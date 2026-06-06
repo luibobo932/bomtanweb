@@ -164,15 +164,21 @@ export async function getPublicVideos() {
         .eq("approval_status", "approved")
         .order("published_at", { ascending: false, nullsFirst: false });
 
-      if (error) throw new Error(error.message);
-      return (data ?? []).map((row) => mapSupabaseVideo(row));
-    } catch {
-      // Fallback về mock data khi Supabase không kết nối được (dev local)
-      return seedVideos.filter((item) => item.approvalStatus === "approved");
+      if (error) {
+        console.error("[video-repository] Supabase error:", error.message);
+        return seedVideos.filter((v) => v.approvalStatus === "approved");
+      }
+
+      const rows = (data ?? []).map((row) => mapSupabaseVideo(row));
+      return rows.length > 0 ? rows : seedVideos.filter((v) => v.approvalStatus === "approved");
+    } catch (err) {
+      console.error("[video-repository] Connection error:", err);
+      return seedVideos.filter((v) => v.approvalStatus === "approved");
     }
   }
 
-  return runtimeVideos.filter((item) => item.approvalStatus === "approved");
+  const base = process.env.NODE_ENV !== "production" ? runtimeVideos : seedVideos;
+  return base.filter((v) => v.approvalStatus === "approved");
 }
 
 export async function getAllVideos() {
@@ -184,14 +190,20 @@ export async function getAllVideos() {
         .select("*")
         .order("created_at", { ascending: false, nullsFirst: false });
 
-      if (error) throw new Error(error.message);
-      return (data ?? []).map((row) => mapSupabaseVideo(row));
-    } catch {
+      if (error) {
+        console.error("[video-repository] getAllVideos Supabase error:", error.message);
+        return [...seedVideos];
+      }
+
+      const rows = (data ?? []).map((row) => mapSupabaseVideo(row));
+      return rows.length > 0 ? rows : [...seedVideos];
+    } catch (err) {
+      console.error("[video-repository] getAllVideos Connection error:", err);
       return [...seedVideos];
     }
   }
 
-  return [...runtimeVideos];
+  return process.env.NODE_ENV !== "production" ? [...runtimeVideos] : [...seedVideos];
 }
 
 export async function createAdminVideo(params: CreateVideoParams) {

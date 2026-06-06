@@ -106,6 +106,13 @@ function normalizeListingForSupabase(listing: ListingItem, managerProfileId?: st
   };
 }
 
+const seedPublicListings = () =>
+  listings.filter(
+    (item) =>
+      (item.approvalStatus ?? "approved") === "approved" &&
+      ["con_ban", "dang_thuong_luong"].includes(item.status),
+  );
+
 export async function getPublicListings() {
   if (hasSupabaseEnv()) {
     try {
@@ -117,18 +124,21 @@ export async function getPublicListings() {
         .in("status", ["con_ban", "dang_thuong_luong"])
         .order("created_at", { ascending: false });
 
-      if (error) throw new Error(error.message);
-      return (data ?? []).map((row) => mapListingRow(row));
-    } catch {
-      return listings.filter(
-        (item) =>
-          (item.approvalStatus ?? "approved") === "approved" &&
-          ["con_ban", "dang_thuong_luong"].includes(item.status),
-      );
+      if (error) {
+        console.error("[listing-repository] Supabase error:", error.message);
+        return seedPublicListings();
+      }
+
+      const rows = (data ?? []).map((row) => mapListingRow(row));
+      return rows.length > 0 ? rows : seedPublicListings();
+    } catch (err) {
+      console.error("[listing-repository] Connection error:", err);
+      return seedPublicListings();
     }
   }
 
-  return runtimeListings.filter(
+  const base = process.env.NODE_ENV !== "production" ? runtimeListings : listings;
+  return base.filter(
     (item) =>
       (item.approvalStatus ?? "approved") === "approved" &&
       ["con_ban", "dang_thuong_luong"].includes(item.status),
@@ -144,14 +154,20 @@ export async function getAllListings() {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) throw new Error(error.message);
-      return (data ?? []).map((row) => mapListingRow(row));
-    } catch {
+      if (error) {
+        console.error("[listing-repository] getAllListings Supabase error:", error.message);
+        return [...listings];
+      }
+
+      const rows = (data ?? []).map((row) => mapListingRow(row));
+      return rows.length > 0 ? rows : [...listings];
+    } catch (err) {
+      console.error("[listing-repository] getAllListings Connection error:", err);
       return [...listings];
     }
   }
 
-  return [...runtimeListings];
+  return process.env.NODE_ENV !== "production" ? [...runtimeListings] : [...listings];
 }
 
 export async function getListingBySlug(slug: string) {
@@ -164,9 +180,14 @@ export async function getListingBySlug(slug: string) {
         .eq("slug", slug)
         .maybeSingle();
 
-      if (error) throw new Error(error.message);
-      return data ? mapListingRow(data) : undefined;
-    } catch {
+      if (error) {
+        console.error("[listing-repository] getListingBySlug Supabase error:", error.message);
+        return listings.find((item) => item.slug === slug);
+      }
+
+      return data ? mapListingRow(data) : listings.find((item) => item.slug === slug);
+    } catch (err) {
+      console.error("[listing-repository] getListingBySlug Connection error:", err);
       return listings.find((item) => item.slug === slug);
     }
   }

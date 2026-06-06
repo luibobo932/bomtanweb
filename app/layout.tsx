@@ -68,6 +68,25 @@ export const metadata: Metadata = {
   },
 };
 
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "NhàPhốSG",
+  url: siteUrl,
+  logo: `${siteUrl}/logo.png`,
+  description:
+    "Nền tảng video review nhà phố TP.HCM: xem thực tế, kiến thức mua nhà từ chuyên gia, listing nhà phố Q1-Q3-Q5-Q10.",
+  contactPoint: {
+    "@type": "ContactPoint",
+    contactType: "customer service",
+    availableLanguage: "Vietnamese",
+  },
+  areaServed: {
+    "@type": "City",
+    name: "Thành phố Hồ Chí Minh",
+  },
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -77,6 +96,10 @@ export default function RootLayout({
     <html lang="vi" className={`${beVietnamPro.variable} ${geistMono.variable}`}>
       <head>
         <link rel="canonical" href={siteUrl} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
       </head>
       <body>
         {children}

@@ -16,29 +16,37 @@ export default async function HomePage() {
     <SiteShell>
       {/* ── Hero ── */}
       <section className="container-shell">
-        <div className="relative overflow-hidden px-4 pb-8 pt-12 text-center md:pt-16">
-          {/* Glow background */}
-          <div className="pointer-events-none absolute left-1/2 top-0 h-[400px] w-[600px] -translate-x-1/2 rounded-full bg-[var(--brand)] opacity-[0.06] blur-[120px]" />
+        <div className="relative overflow-hidden px-4 pb-10 pt-14 text-center md:pt-20">
+
+          {/* Multi-layer ambient glow */}
+          <div className="pointer-events-none absolute left-1/2 top-0 h-[500px] w-[700px] -translate-x-1/2 -translate-y-1/4 rounded-full bg-[var(--brand)] opacity-[0.07] blur-[140px]" />
+          <div className="pointer-events-none absolute left-[30%] top-[20%] h-[200px] w-[300px] rounded-full bg-[#4040ff] opacity-[0.03] blur-[80px]" />
 
           <div className="relative">
-            <div className="mx-auto mb-4 inline-flex items-center gap-2 rounded-full border border-[#2e2e28] bg-[#141414] px-4 py-1.5 text-[12px] text-zinc-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand)]" />
+            {/* Badge */}
+            <div className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full border border-white/[0.09] bg-white/[0.04] px-4 py-1.5 text-[12px] text-zinc-400 backdrop-blur-sm">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--brand)] opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--brand)]" />
+              </span>
               Nền tảng video BDS đầu tiên tại TP.HCM
             </div>
 
-            <h1 className="mx-auto max-w-3xl text-[36px] font-black leading-[1.15] tracking-[-0.04em] text-white md:text-[52px] lg:text-[60px]">
+            {/* Headline */}
+            <h1 className="mx-auto max-w-3xl text-[38px] font-black leading-[1.12] tracking-[-0.04em] text-white md:text-[54px] lg:text-[64px]">
               Xem{" "}
-              <span className="text-[var(--brand)]">video review nhà phố</span>
+              <span className="brand-gradient-text">video review nhà phố</span>
               <br className="hidden md:block" />
               {" "}trước khi xuống tiền
             </h1>
 
-            <p className="mx-auto mt-4 max-w-xl text-[15px] leading-7 text-zinc-400 md:text-[16px]">
-              Q1 · Q3 · Q5 · Q10 — Dưới 20 tỷ · Đội ngũ chuyên gia review thực tế,
-              không quảng cáo, không che giấu nhược điểm.
+            <p className="mx-auto mt-5 max-w-[500px] text-[15px] leading-[1.8] text-zinc-400 md:text-[16px]">
+              Q1 · Q3 · Q5 · Q10 — Dưới 20 tỷ
+              <br />
+              Chuyên gia review thực tế, không tô vẽ, không che nhược điểm.
             </p>
 
-            <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <div className="mt-7 flex flex-wrap justify-center gap-3">
               <Link href="/feed" className="primary-btn primary-btn--lg">
                 Xem video ngay →
               </Link>
@@ -47,14 +55,16 @@ export default async function HomePage() {
               </Link>
             </div>
 
-            {/* Stats */}
-            <div className="mt-8 flex flex-wrap justify-center gap-3">
+            {/* Stats row */}
+            <div className="mt-10 flex flex-wrap justify-center gap-3">
               {stats.map((item) => (
                 <div
                   key={item.label}
-                  className="rounded-[10px] border border-[#2e2e28] bg-[#141414] px-5 py-3 text-center"
+                  className="rounded-[12px] border border-white/[0.08] border-t-white/[0.12] bg-white/[0.03] px-5 py-3.5 text-center backdrop-blur-sm"
                 >
-                  <div className="text-[22px] font-black text-[var(--brand)]">{item.value}</div>
+                  <div className="text-[24px] font-black tracking-tight brand-gradient-text">
+                    {item.value}
+                  </div>
                   <div className="mt-0.5 text-[11px] text-zinc-500">{item.label}</div>
                 </div>
               ))}
@@ -64,22 +74,29 @@ export default async function HomePage() {
       </section>
 
       {/* ── Trust bar ── */}
-      <section className="border-y border-[#2e2e28] bg-[#0d0d0d]">
-        <div className="container-shell px-4 py-4">
-          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-[12px] text-zinc-500">
-            <span className="flex items-center gap-2"><span className="text-[var(--brand)]">✓</span> Review thực tế, không tô vẽ</span>
-            <span className="flex items-center gap-2"><span className="text-[var(--brand)]">✓</span> Pháp lý minh bạch</span>
-            <span className="flex items-center gap-2"><span className="text-[var(--brand)]">✓</span> Chuyên gia có kinh nghiệm 10+ năm</span>
-            <span className="flex items-center gap-2"><span className="text-[var(--brand)]">✓</span> Tư vấn miễn phí, không ép mua</span>
+      <section className="border-y border-white/[0.06] bg-white/[0.02]">
+        <div className="container-shell px-4 py-3.5">
+          <div className="flex flex-wrap items-center justify-center gap-x-7 gap-y-2 text-[12px] text-zinc-500">
+            {[
+              "Review thực tế, không tô vẽ",
+              "Pháp lý minh bạch",
+              "Chuyên gia 10+ năm kinh nghiệm",
+              "Tư vấn miễn phí, không ép mua",
+            ].map((text) => (
+              <span key={text} className="flex items-center gap-1.5">
+                <span className="text-[var(--brand)] text-[10px]">✓</span>
+                {text}
+              </span>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ── Video strip ── */}
-      <section className="container-shell px-4 pb-3 pt-8">
+      <section className="container-shell px-4 pb-3 pt-10">
         <div className="section-header-row">
           <div>
-            <div className="section-mini-title">🎬 Video mới nhất</div>
+            <div className="section-mini-title">Video mới nhất</div>
             <div className="section-mini-subtitle">Review nhà thực tế, kiến thức BDS</div>
           </div>
           <Link href="/feed" className="see-all-link">Xem tất cả →</Link>
@@ -91,11 +108,11 @@ export default async function HomePage() {
       </section>
 
       {/* ── Listings ── */}
-      <section className="container-shell px-4 pb-3 pt-8">
+      <section className="container-shell px-4 pb-3 pt-10">
         <div className="section-header-row">
           <div>
-            <div className="section-mini-title">🏠 Nhà đang bán</div>
-            <div className="section-mini-subtitle">Cập nhật liên tục</div>
+            <div className="section-mini-title">Nhà đang bán</div>
+            <div className="section-mini-subtitle">Cập nhật liên tục từ đội ngũ</div>
           </div>
           <Link href="/nha-ban" className="see-all-link">Xem tất cả →</Link>
         </div>
@@ -110,17 +127,20 @@ export default async function HomePage() {
       </section>
 
       {/* ── CTA banner ── */}
-      <section className="container-shell px-4 pb-12 pt-8">
-        <div className="relative overflow-hidden rounded-[24px] border border-[#2e2e28] bg-gradient-to-br from-[#1a0a04] to-[#0a0a0a] p-6 md:p-8">
-          <div className="pointer-events-none absolute right-0 top-0 h-48 w-48 rounded-full bg-[var(--brand)] opacity-[0.08] blur-[60px]" />
-          <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <section className="container-shell px-4 pb-14 pt-10">
+        <div className="cta-banner relative overflow-hidden p-6 md:p-8">
+          {/* Glow orb */}
+          <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[var(--brand)] opacity-[0.12] blur-[50px]" />
+          <div className="relative flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--brand)]">Chủ nhà chú ý</div>
-              <div className="mt-2 text-[20px] font-black text-white md:text-[24px]">
-                Bán nhà? Gửi thông tin ngay — miễn phí
+              <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--brand)]">
+                Chủ nhà chú ý
               </div>
-              <p className="mt-2 text-sm text-zinc-400">
-                Đội ngũ sẽ liên hệ xác minh và tư vấn trong 2 giờ làm việc.
+              <div className="mt-2 text-[20px] font-black text-white md:text-[23px] tracking-tight">
+                Bán nhà? Gửi thông tin — miễn phí
+              </div>
+              <p className="mt-1.5 text-sm text-zinc-400 leading-relaxed">
+                Đội ngũ liên hệ xác minh và tư vấn trong 2 giờ làm việc.
               </p>
             </div>
             <Link

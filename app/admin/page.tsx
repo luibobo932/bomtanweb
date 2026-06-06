@@ -11,6 +11,8 @@ import { getAllProfiles } from "@/lib/profile-repository";
 import { getAllVideos } from "@/lib/video-repository";
 import { redirect } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 const modules = [
   {
     title: "Quan ly video",
