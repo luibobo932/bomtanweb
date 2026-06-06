@@ -1,10 +1,14 @@
 import { SiteShell } from "@/components/site-shell";
 import { VideoFeedSection } from "@/components/video-feed-section";
+import { getPublicListings } from "@/lib/listing-repository";
 import { getPublicVideos } from "@/lib/video-repository";
 import { resolveTikTokEmbedUrl } from "@/lib/tiktok-oembed";
 
 export default async function FeedPage() {
-  const rawVideos = await getPublicVideos();
+  const [rawVideos, listings] = await Promise.all([
+    getPublicVideos(),
+    getPublicListings(),
+  ]);
 
   const videos = await Promise.all(
     rawVideos.map(async (video) => {
@@ -32,7 +36,7 @@ export default async function FeedPage() {
         </div>
       </section>
 
-      <VideoFeedSection videos={videos} />
+      <VideoFeedSection videos={videos} listings={listings} />
     </SiteShell>
   );
 }

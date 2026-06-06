@@ -25,18 +25,19 @@ function mapProfileRow(row: Record<string, unknown>): AgentProfile {
 
 export async function getPublicProfiles() {
   if (hasSupabaseEnv()) {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase!
-      .from("profiles")
-      .select("*")
-      .eq("is_active", true)
-      .order("follow_count", { ascending: false });
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase!
+        .from("profiles")
+        .select("*")
+        .eq("is_active", true)
+        .order("follow_count", { ascending: false });
 
-    if (error) {
-      throw new Error(`Khong doc duoc profiles tu Supabase: ${error.message}`);
+      if (error) throw new Error(error.message);
+      return (data ?? []).map((row) => mapProfileRow(row));
+    } catch {
+      return [...agents];
     }
-
-    return (data ?? []).map((row) => mapProfileRow(row));
   }
 
   return [...runtimeProfiles];
@@ -44,18 +45,19 @@ export async function getPublicProfiles() {
 
 export async function getAllProfiles() {
   if (hasSupabaseEnv()) {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase!
-      .from("profiles")
-      .select("*")
-      .eq("is_active", true)
-      .order("follow_count", { ascending: false });
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase!
+        .from("profiles")
+        .select("*")
+        .eq("is_active", true)
+        .order("follow_count", { ascending: false });
 
-    if (error) {
-      throw new Error(`Khong doc duoc tat ca profiles: ${error.message}`);
+      if (error) throw new Error(error.message);
+      return (data ?? []).map((row) => mapProfileRow(row));
+    } catch {
+      return [...agents];
     }
-
-    return (data ?? []).map((row) => mapProfileRow(row));
   }
 
   return [...runtimeProfiles];
@@ -63,19 +65,20 @@ export async function getAllProfiles() {
 
 export async function getProfileBySlug(slug: string) {
   if (hasSupabaseEnv()) {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase!
-      .from("profiles")
-      .select("*")
-      .eq("slug", slug)
-      .eq("is_active", true)
-      .maybeSingle();
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase!
+        .from("profiles")
+        .select("*")
+        .eq("slug", slug)
+        .eq("is_active", true)
+        .maybeSingle();
 
-    if (error) {
-      throw new Error(`Khong doc duoc profile tu Supabase: ${error.message}`);
+      if (error) throw new Error(error.message);
+      return data ? mapProfileRow(data) : undefined;
+    } catch {
+      return agents.find((item) => item.slug === slug);
     }
-
-    return data ? mapProfileRow(data) : undefined;
   }
 
   return runtimeProfiles.find((item) => item.slug === slug);

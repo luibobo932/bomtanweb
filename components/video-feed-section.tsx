@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { SkeletonFeedCard } from "@/components/skeleton";
 import { VideoEmbed } from "@/components/video-embed";
-import { agents, quickFilters, type VideoItem } from "@/data/mock-data";
+import { agents, quickFilters, type ListingItem, type VideoItem } from "@/data/mock-data";
 
 const feedFilters = ["Tất cả", ...quickFilters, "Kiến thức"];
 
@@ -42,12 +42,21 @@ function VerifiedBadge() {
   );
 }
 
-function FeedCard({ video }: { video: VideoItem }) {
+function FeedCard({ video, listings }: { video: VideoItem; listings: ListingItem[] }) {
   const [liked, setLiked] = useState(false);
   const [animating, setAnimating] = useState(false);
   const [saved, setSaved] = useState(false);
   const agent = agents.find((item) => item.slug === video.reviewerSlug);
   const isVerified = (agent?.followCount ?? 0) > 100000;
+
+  // Khi video gắn listing, hiển thị chips theo dữ liệu listing (nguồn sự thật)
+  // để tránh lệch thông tin giữa video và bài đăng.
+  const matchedListing = video.listingSlug
+    ? listings.find((item) => item.slug === video.listingSlug)
+    : undefined;
+  const displayDistrict = matchedListing?.district ?? video.districtTag;
+  const displayPrice = matchedListing?.priceLabel ?? video.priceTag;
+  const displayType = matchedListing?.houseType ?? video.houseTypeTag;
 
   // Load saved state from localStorage
   useEffect(() => {
@@ -99,8 +108,8 @@ function FeedCard({ video }: { video: VideoItem }) {
 
       {/* Video */}
       <div
-        className="relative w-full overflow-hidden bg-[var(--s5)]"
-        style={{ aspectRatio: "9/16", maxHeight: "65vh", minHeight: "320px" }}
+        className="relative mx-auto w-full overflow-hidden bg-[var(--s5)]"
+        style={{ aspectRatio: "9/16", maxWidth: "calc(65vh * 9 / 16)", minHeight: "320px" }}
       >
         <VideoEmbed video={video} />
       </div>
@@ -113,9 +122,9 @@ function FeedCard({ video }: { video: VideoItem }) {
 
         {/* Chips */}
         <div className="chip-row mt-3">
-          <span className="chip">{video.districtTag}</span>
-          <span className="chip">{video.priceTag}</span>
-          <span className="chip">{video.houseTypeTag}</span>
+          <span className="chip">{displayDistrict}</span>
+          <span className="chip">{displayPrice}</span>
+          <span className="chip">{displayType}</span>
         </div>
 
         {/* Actions */}
@@ -162,7 +171,13 @@ function FeedCard({ video }: { video: VideoItem }) {
 
 const PAGE_SIZE = 6;
 
-export function VideoFeedSection({ videos }: { videos: VideoItem[] }) {
+export function VideoFeedSection({
+  videos,
+  listings = [],
+}: {
+  videos: VideoItem[];
+  listings?: ListingItem[];
+}) {
   const [activeFilter, setActiveFilter] = useState("Tất cả");
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -267,7 +282,7 @@ export function VideoFeedSection({ videos }: { videos: VideoItem[] }) {
           <>
             <div className="grid gap-4">
               {visibleVideos.map((video) => (
-                <FeedCard key={video.id} video={video} />
+                <FeedCard key={video.id} video={video} listings={listings} />
               ))}
             </div>
 

@@ -197,18 +197,19 @@ export async function getListingBySlug(slug: string) {
 
 export async function getListingsByManager(slug: string) {
   if (hasSupabaseEnv()) {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase!
-      .from("listings")
-      .select("*")
-      .eq("manager_slug", slug)
-      .order("created_at", { ascending: false });
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase!
+        .from("listings")
+        .select("*")
+        .eq("manager_slug", slug)
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      throw new Error(`Khong doc duoc listings theo manager: ${error.message}`);
+      if (error) throw new Error(error.message);
+      return (data ?? []).map((row) => mapListingRow(row));
+    } catch {
+      return listings.filter((item) => item.managerSlug === slug);
     }
-
-    return (data ?? []).map((row) => mapListingRow(row));
   }
 
   return runtimeListings.filter((item) => item.managerSlug === slug);

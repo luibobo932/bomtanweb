@@ -10,6 +10,7 @@ import {
   createVideoRecord,
   mapSupabaseVideo,
   normalizeVideoForSupabase,
+  resolveExternalVideo,
 } from "@/lib/video-utils";
 
 type CreateVideoParams = {
@@ -213,12 +214,19 @@ export async function createAdminVideo(params: CreateVideoParams) {
     ? await resolveListingFromSupabase(params.listingId)
     : resolveListing(params.listingId);
 
+  // Resolve embed (xử lý cả link TikTok rút gọn qua oEmbed) trước khi tạo record.
+  const resolved = await resolveExternalVideo(params.videoUrl, params.embedCode);
+  if (!resolved.ok || !resolved.sourceType) {
+    throw new Error(resolved.message || "Nguon video khong hop le.");
+  }
+
   const video = createVideoRecord({
     title: params.title,
     summary: params.summary,
     videoUrl: params.videoUrl,
     embedCode: params.embedCode,
-    thumbnailUrl: params.thumbnailUrl,
+    // Nếu admin không nhập thumbnail, dùng thumbnail TikTok lấy từ oEmbed.
+    thumbnailUrl: params.thumbnailUrl?.trim() || resolved.thumbnailUrl,
     durationSeconds: params.durationSeconds,
     reviewerProfileId: reviewer.reviewerProfileId,
     reviewerSlug: reviewer.reviewerSlug,
@@ -231,6 +239,8 @@ export async function createAdminVideo(params: CreateVideoParams) {
     listingId: listing.listingId,
     listingSlug: listing.listingSlug,
     approvalStatus: params.role === "super_admin" ? "approved" : "pending",
+    embedUrl: resolved.embedUrl,
+    sourceType: resolved.sourceType,
   });
 
   if (hasSupabaseEnv()) {

@@ -141,17 +141,18 @@ export async function createOwnerLead(params: CreateOwnerLeadParams) {
 
 export async function getBuyerLeads() {
   if (hasSupabaseEnv()) {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase!
-      .from("buyer_leads")
-      .select("*")
-      .order("created_at", { ascending: false });
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase!
+        .from("buyer_leads")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      throw new Error(`Khong doc duoc buyer leads: ${error.message}`);
+      if (error) throw new Error(error.message);
+      return (data ?? []).map((row) => mapBuyerLeadRow(row));
+    } catch {
+      return [...buyerLeads];
     }
-
-    return (data ?? []).map((row) => mapBuyerLeadRow(row));
   }
 
   return [...runtimeBuyerLeads];
@@ -159,17 +160,18 @@ export async function getBuyerLeads() {
 
 export async function getOwnerLeads() {
   if (hasSupabaseEnv()) {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase!
-      .from("owner_leads")
-      .select("*")
-      .order("created_at", { ascending: false });
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase!
+        .from("owner_leads")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      throw new Error(`Khong doc duoc owner leads: ${error.message}`);
+      if (error) throw new Error(error.message);
+      return (data ?? []).map((row) => mapOwnerLeadRow(row));
+    } catch {
+      return [...ownerLeads];
     }
-
-    return (data ?? []).map((row) => mapOwnerLeadRow(row));
   }
 
   return [...runtimeOwnerLeads];

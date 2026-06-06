@@ -104,6 +104,7 @@ export function VideoEmbed({
         className={`h-full w-full object-cover ${className}`}
         controls
         preload="metadata"
+        playsInline
         poster={video.thumbnailUrl}
         src={video.videoUrl}
       />
