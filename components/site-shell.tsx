@@ -10,6 +10,7 @@ const navItems = [
   { href: "/", label: "Trang chủ" },
   { href: "/feed", label: "Video" },
   { href: "/nha-ban", label: "Nhà bán" },
+  { href: "/quy-hoach", label: "Quy hoạch" },
   { href: "/kien-thuc", label: "Kiến thức" },
   { href: "/doi-ngu", label: "Chuyên gia" },
   { href: "/gui-nhu-cau", label: "Tư vấn" },

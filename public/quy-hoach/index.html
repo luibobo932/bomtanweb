@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bản đồ Quy hoạch — SKL Internal</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #e8eaf0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── Header ── */
+  #header {
+    background: #1a2332; color: #fff; padding: 0 16px; height: 44px;
+    display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,.35); z-index: 100;
+  }
+  #header .logo { font-size: 14px; font-weight: 700; letter-spacing: .5px; color: #f0c040; }
+  #header .title { font-size: 13px; color: #ccd6e8; }
+  #header .disclaimer {
+    margin-left: auto; font-size: 11px; color: #f59e0b;
+    background: rgba(245,158,11,.15); padding: 3px 10px; border-radius: 10px;
+    border: 1px solid rgba(245,158,11,.3);
+  }
+
+  /* ── Main layout ── */
+  #main { display: flex; flex: 1; overflow: hidden; }
+
+  /* ── Map area ── */
+  #map-area {
+    flex: 1; position: relative; overflow: hidden; background: #c8d4e0;
+    cursor: grab; user-select: none;
+  }
+  #map-area.grabbing { cursor: grabbing; }
+  #map-area.zoom-mode { cursor: zoom-in; }
+  #map-area.measure-mode { cursor: crosshair; }
+
+  #map-container {
+    position: absolute; top: 0; left: 0;
+    transform-origin: 0 0;
+    transition: none;
+  }
+  #map-img {
+    display: block; max-width: none; position: relative; z-index: 1;
+    image-rendering: auto;
+  }
+  #source-mask-layer {
+    position: absolute; left: 0; top: 0; z-index: 2;
+    pointer-events: none;
+  }
+  .source-mask {
+    position: absolute; background: #fff;
+    pointer-events: none;
+  }
+  #measure-layer {
+    position: absolute; inset: 0; z-index: 8;
+    pointer-events: none; overflow: visible;
+  }
+  #measure-hint {
+    position: absolute; left: 56px; top: 156px; z-index: 11;
+    display: none; max-width: 300px;
+    background: rgba(17,24,39,.86); color: #fff;
+    padding: 6px 9px; border-radius: 6px;
+    font-size: 11px; line-height: 1.4;
+  }
+  #measure-hint.show { display: block; }
+  #layer-section { display: none !important; }
+
+  /* empty state */
+  #map-empty {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: #8899aa; gap: 12px;
+  }
+  #map-empty svg { opacity: .35; }
+  #map-empty p { font-size: 15px; }
+
+  /* loading overlay */
+  #map-loading {
+    display: none; position: absolute; inset: 0;
+    background: rgba(200,212,224,.7);
+    align-items: center; justify-content: center;
+  }
+  #map-loading.show { display: flex; }
+  .spinner {
+    width: 36px; height: 36px; border: 3px solid #ccc;
+    border-top-color: #2563eb; border-radius: 50%; animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Zoom controls ── */
+  #zoom-controls {
+    position: absolute; left: 12px; top: 60px;
+    display: flex; flex-direction: column; gap: 4px; z-index: 10;
+  }
+  .zc-btn {
+    width: 34px; height: 34px; background: #fff; border: none; border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.2); cursor: pointer; font-size: 17px;
+    display: flex; align-items: center; justify-content: center; color: #374151;
+    transition: background .15s;
+  }
+  .zc-btn:hover { background: #f0f4ff; }
+  .zc-sep { height: 6px; }
+
+  #measure-tools {
+    position: absolute; left: 12px; top: 182px;
+    display: flex; flex-direction: column; gap: 4px; z-index: 10;
+  }
+  .measure-btn {
+    width: 34px; height: 34px; background: #fff; border: none; border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.2); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; color: #374151;
+    transition: background .15s, color .15s, box-shadow .15s;
+  }
+  .measure-btn:hover { background: #f0f4ff; }
+  .measure-btn.active {
+    background: #2563eb; color: #fff;
+    box-shadow: 0 2px 8px rgba(37,99,235,.35);
+  }
+
+  /* zoom level badge */
+  #zoom-badge {
+    position: absolute; left: 12px; bottom: 12px;
+    background: rgba(0,0,0,.55); color: #fff; font-size: 11px;
+    padding: 4px 8px; border-radius: 4px; z-index: 10;
+  }
+
+  /* completeness warning */
+  #completeness-warn {
+    display: none; position: absolute; bottom: 12px; left: 56px;
+    background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px;
+    padding: 5px 10px; font-size: 11px; color: #92400e; z-index: 10; max-width: 380px;
+  }
+  #completeness-warn.show { display: block; }
+
+  /* ── Right panel ── */
+  #panel {
+    width: 248px; background: #fff; display: flex; flex-direction: column;
+    border-left: 1px solid #dde3ec; flex-shrink: 0; overflow-y: auto;
+  }
+
+  .panel-section { padding: 12px 14px; border-bottom: 1px solid #eee; }
+
+  .panel-title {
+    font-size: 12px; font-weight: 700; color: #1a2332; text-transform: uppercase;
+    letter-spacing: .4px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+  }
+  .panel-title svg { flex-shrink: 0; }
+
+  label.field-label { font-size: 11px; color: #6b7280; font-weight: 500; display: block; margin-bottom: 3px; }
+
+  select, input {
+    width: 100%; padding: 6px 8px; border: 1px solid #d1d5db;
+    border-radius: 5px; font-size: 12px; background: #fff; color: #111;
+    outline: none; margin-bottom: 8px;
+  }
+  select:focus, input:focus { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,.15); }
+
+  .readonly-field {
+    background: #f9fafb; padding: 6px 8px; border-radius: 5px;
+    font-size: 12px; color: #374151; border: 1px solid #e5e7eb; margin-bottom: 8px;
+  }
+
+  /* Layer selector */
+  #layer-list { display: flex; flex-direction: column; gap: 4px; }
+  .layer-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 9px; border-radius: 5px; cursor: pointer; font-size: 12px;
+    border: 1px solid #e5e7eb; transition: all .15s; background: #f9fafb;
+  }
+  .layer-item:hover { border-color: #93c5fd; background: #eff6ff; }
+  .layer-item.active { border-color: #2563eb; background: #eff6ff; color: #1d4ed8; font-weight: 600; }
+  .layer-item .layer-meta { font-size: 10px; color: #9ca3af; }
+  .layer-item.active .layer-meta { color: #60a5fa; }
+  .completeness-bar-wrap { flex: 1; margin: 0 8px; height: 4px; background: #e5e7eb; border-radius: 2px; }
+  .completeness-bar { height: 100%; border-radius: 2px; }
+
+  /* Ward info */
+  #ward-info { display: none; }
+  #ward-info.show { display: block; }
+  .info-row { display: flex; justify-content: space-between; font-size: 11px; padding: 2px 0; }
+  .info-row .ik { color: #6b7280; }
+  .info-row .iv { font-weight: 500; color: #111; }
+
+  /* Status badge */
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 600;
+  }
+  .badge-green { background: #dcfce7; color: #166534; }
+  .badge-orange { background: #fef3c7; color: #92400e; }
+  .badge-red { background: #fee2e2; color: #991b1b; }
+
+  /* Buttons */
+  .btn-row { display: flex; gap: 6px; margin-top: 4px; }
+  .btn { flex: 1; padding: 7px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; border: none; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 5px; transition: all .15s; }
+  .btn-primary { background: #2563eb; color: #fff; }
+  .btn-primary:hover { background: #1d4ed8; }
+  .btn-secondary { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+  .btn-secondary:hover { background: #e5e7eb; }
+  .btn-save { background: #059669; color: #fff; }
+  .btn-save:hover { background: #047857; }
+
+  /* Disclaimer */
+  #disclaimer {
+    padding: 10px 14px; background: #fffbeb; border-top: 1px solid #fde68a;
+    font-size: 10px; color: #92400e; line-height: 1.5; margin-top: auto;
+  }
+  #disclaimer strong { color: #78350f; }
+  #source-attribution {
+    margin: 10px 14px; padding: 8px 10px;
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+    color: #475569; font-size: 11px; line-height: 1.45;
+  }
+
+  /* Minimap */
+  #minimap-section { padding: 10px 14px; border-bottom: 1px solid #eee; }
+  #minimap { width: 100%; height: 90px; background: #f0f4f8; border-radius: 5px; position: relative; overflow: hidden; }
+  #minimap img { width: 100%; height: 100%; object-fit: contain; opacity: .85; }
+  #minimap-label { font-size: 10px; color: #6b7280; text-align: center; margin-top: 4px; }
+
+  /* Instructions */
+  #instructions {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,.55); color: #fff; font-size: 11px; padding: 5px 12px;
+    border-radius: 12px; z-index: 10; pointer-events: none; transition: opacity .5s;
+  }
+  #instructions.hide { opacity: 0; }
+
+  /* Coordinates tooltip */
+  #coords {
+    position: absolute; bottom: 12px; right: 260px;
+    background: rgba(0,0,0,.5); color: #fff; font-size: 10px;
+    padding: 3px 8px; border-radius: 4px; z-index: 10; pointer-events: none;
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div class="logo">SKL</div>
+  <div class="title">Bản đồ Quy hoạch — Quận 10, TP. Hồ Chí Minh</div>
+  <div class="disclaimer">⚠ Chỉ dùng tham khảo nội bộ — đối chiếu nguồn chính thức khi giao dịch</div>
+</div>
+
+<div id="main">
+
+  <!-- ── MAP AREA ── -->
+  <div id="map-area">
+    <div id="map-container">
+      <img id="map-img" src="" alt="Bản đồ quy hoạch" draggable="false">
+      <div id="source-mask-layer" aria-hidden="true"></div>
+    </div>
+
+    <svg id="measure-layer"></svg>
+
+    <div id="map-empty">
+      <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#8899aa" stroke-width="1.5">
+        <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
+        <line x1="9" y1="3" x2="9" y2="18"/>
+        <line x1="15" y1="6" x2="15" y2="21"/>
+      </svg>
+      <p>Chọn phường để xem bản đồ quy hoạch</p>
+    </div>
+
+    <div id="map-loading">
+      <div class="spinner"></div>
+    </div>
+
+    <div id="instructions">🖱 Cuộn để zoom · Kéo để di chuyển · Double-click để zoom vào</div>
+
+    <div id="zoom-controls">
+      <button class="zc-btn" title="Phóng to (=)" onclick="zoomBy(1.3)">+</button>
+      <button class="zc-btn" title="Thu nhỏ (-)" onclick="zoomBy(1/1.3)">−</button>
+      <div class="zc-sep"></div>
+      <button class="zc-btn" title="Vừa khung (F)" onclick="fitToView()" style="font-size:13px">⊡</button>
+      <button class="zc-btn" title="Reset (R)" onclick="resetView()" style="font-size:13px">↺</button>
+    </div>
+
+    <div id="measure-tools">
+      <button id="measure-line-btn" class="measure-btn" title="Do chieu dai" onclick="setMeasureMode('line')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M6 18L18 6"/><path d="M6 14v4h4"/><path d="M14 6h4v4"/>
+        </svg>
+      </button>
+      <button id="measure-area-btn" class="measure-btn" title="Do kich thuoc/dien tich" onclick="setMeasureMode('area')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 3.2 20.2 9v9.2L12 22 3.8 18.2V9L12 3.2Zm0 2.5L6 10v6.6l6 2.8 6-2.8V10l-6-4.3Z"/>
+        </svg>
+      </button>
+    </div>
+    <div id="measure-hint"></div>
+
+    <div id="zoom-badge">Zoom 1×</div>
+    <div id="completeness-warn"></div>
+    <div id="coords"></div>
+  </div>
+
+  <!-- ── RIGHT PANEL ── -->
+  <div id="panel">
+
+    <div class="panel-section">
+      <div class="panel-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Xem quy hoạch
+      </div>
+
+      <label class="field-label">Thành phố</label>
+      <div class="readonly-field">Thành phố Hồ Chí Minh</div>
+
+      <label class="field-label">Quận/Huyện</label>
+      <select id="sel-district" onchange="onDistrictChange()">
+        <option value="HCM_Q10">Quận 10</option>
+      </select>
+
+      <label class="field-label">Phường/Xã</label>
+      <select id="sel-ward" onchange="onWardChange()">
+        <option value="">— Chọn phường —</option>
+      </select>
+    </div>
+
+    <!-- Layer / Zoom selector -->
+    <div class="panel-section" id="layer-section" style="display:none">
+      <div class="panel-title" style="margin-bottom:8px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Chọn layer / Zoom
+      </div>
+      <div id="layer-list"></div>
+    </div>
+
+    <!-- Ward info -->
+    <div class="panel-section" id="ward-info-section">
+      <div class="panel-title">Thông tin phường</div>
+      <div id="ward-info">
+        <div class="info-row"><span class="ik">Số ảnh</span><span class="iv" id="wi-imgcount">—</span></div>
+        <div class="info-row"><span class="ik">Tổng tile</span><span class="iv" id="wi-tiles">—</span></div>
+        <div class="info-row"><span class="ik">Zoom levels</span><span class="iv" id="wi-zooms">—</span></div>
+        <div class="info-row" style="margin-top:4px"><span class="ik">Layer tốt nhất</span><span class="iv" id="wi-best">—</span></div>
+        <div id="wi-warn" style="display:none; margin-top:6px; padding:5px 7px; background:#fef3c7; border-radius:4px; font-size:10px; color:#92400e; line-height:1.4"></div>
+      </div>
+    </div>
+
+    <!-- Minimap preview -->
+    <div id="minimap-section" style="display:none">
+      <div class="panel-title">Preview</div>
+      <div id="minimap"><img id="minimap-img" src="" alt="preview"></div>
+      <div id="minimap-label"></div>
+    </div>
+
+    <div class="panel-section">
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="fitToView()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+          Fit
+        </button>
+        <button class="btn btn-secondary" onclick="resetView()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          Reset
+        </button>
+      </div>
+      <div class="btn-row" style="margin-top:6px">
+        <button class="btn btn-save" onclick="saveMark()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Lưu vào hồ sơ nhà
+        </button>
+      </div>
+    </div>
+
+    <div id="source-attribution">
+      Nguồn bản đồ tham khảo: ReeSoft/GREV. Vùng tiêu đề nằm ngoài bản đồ được thu gọn để xem quy hoạch rõ hơn.
+    </div>
+
+    <div id="disclaimer">
+      <strong>⚠ Lưu ý:</strong> Dữ liệu được trích xuất từ HAR và chưa chắc phủ 100% toàn phường.
+      Thông tin <strong>chỉ dùng tham khảo nội bộ</strong>.
+      Cần đối chiếu <strong>nguồn pháp lý chính thức</strong> khi thực hiện giao dịch.
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Dataset (embedded từ planning_dataset_ward_index.json) ──
+let WARD_INDEX = [
+  { district_code:"HCM_Q10", district_name:"Quận 10", ward_code:"HCM_Q10_Phuong1", ward_name:"Phường 1",
+    available_zoom_levels:[10,11,14], image_count:3, total_tile_count:33,
+    most_complete_zoom_level:11, largest_capture_zoom_level:14, largest_canvas_zoom_level:14,
+    images:[
+      { zoom_level:10, capture_part:1, capture_part_count:1, tile_count:9, bbox_tile_count:9, completeness_percent:100.0, pixel_area:587520, stitched_image_relpath:"images/hcm_q10/phuong_1/zoom_10.jpg" },
+      { zoom_level:11, capture_part:1, capture_part_count:1, tile_count:12, bbox_tile_count:12, completeness_percent:100.0, pixel_area:786432, stitched_image_relpath:"images/hcm_q10/phuong_1/zoom_11.jpg" },
+      { zoom_level:14, capture_part:1, capture_part_count:1, tile_count:12, bbox_tile_count:12, completeness_percent:100.0, pixel_area:786432, stitched_image_relpath:"images/hcm_q10/phuong_1/zoom_14.jpg" }
+    ]
+  },
+  { district_code:"HCM_Q10", district_name:"Quận 10", ward_code:"HCM_Q10_Phuong2", ward_name:"Phường 2",
+    available_zoom_levels:[11,12,13,14,15], image_count:7, total_tile_count:57,
+    most_complete_zoom_level:11, largest_capture_zoom_level:11, largest_canvas_zoom_level:11,
+    images:[
+      { zoom_level:11, capture_part:1, capture_part_count:2, tile_count:3, bbox_tile_count:3, completeness_percent:100.0, pixel_area:195840, stitched_image_relpath:"images/hcm_q10/phuong_2/zoom_11_part_1.jpg" },
+      { zoom_level:11, capture_part:2, capture_part_count:2, tile_count:23, bbox_tile_count:49, completeness_percent:46.94, pixel_area:3211264, stitched_image_relpath:"images/hcm_q10/phuong_2/zoom_11_part_2.jpg" },
+      { zoom_level:12, capture_part:1, capture_part_count:1, tile_count:6, bbox_tile_count:6, completeness_percent:100.0, pixel_area:393216, stitched_image_relpath:"images/hcm_q10/phuong_2/zoom_12.jpg" },
+      { zoom_level:13, capture_part:1, capture_part_count:2, tile_count:1, bbox_tile_count:1, completeness_percent:100.0, pixel_area:65536, stitched_image_relpath:"images/hcm_q10/phuong_2/zoom_13_part_1.jpg" },
+      { zoom_level:13, capture_part:2, capture_part_count:2, tile_count:12, bbox_tile_count:12, completeness_percent:100.0, pixel_area:786432, stitched_image_relpath:"images/hcm_q10/phuong_2/zoom_13_part_2.jpg" },
+      { zoom_level:14, capture_part:1, capture_part_count:1, tile_count:6, bbox_tile_count:6, completeness_percent:100.0, pixel_area:393216, stitched_image_relpath:"images/hcm_q10/phuong_2/zoom_14.jpg" },
+      { zoom_level:15, capture_part:1, capture_part_count:1, tile_count:6, bbox_tile_count:6, completeness_percent:100.0, pixel_area:393216, stitched_image_relpath:"images/hcm_q10/phuong_2/zoom_15.jpg" }
+    ]
+  },
+  { district_code:"HCM_Q10", district_name:"Quận 10", ward_code:"HCM_Q10_Phuong4", ward_name:"Phường 4",
+    available_zoom_levels:[10,11,12,13,14,15], image_count:7, total_tile_count:129,
+    most_complete_zoom_level:10, largest_capture_zoom_level:14, largest_canvas_zoom_level:14,
+    images:[
+      { zoom_level:10, capture_part:1, capture_part_count:1, tile_count:9, bbox_tile_count:9, completeness_percent:100.0, pixel_area:587520, stitched_image_relpath:"images/hcm_q10/phuong_4/zoom_10.jpg" },
+      { zoom_level:11, capture_part:1, capture_part_count:1, tile_count:20, bbox_tile_count:30, completeness_percent:66.67, pixel_area:883200, stitched_image_relpath:"images/hcm_q10/phuong_4/zoom_11.jpg" },
+      { zoom_level:12, capture_part:1, capture_part_count:1, tile_count:25, bbox_tile_count:30, completeness_percent:83.33, pixel_area:1958400, stitched_image_relpath:"images/hcm_q10/phuong_4/zoom_12.jpg" },
+      { zoom_level:13, capture_part:1, capture_part_count:1, tile_count:11, bbox_tile_count:12, completeness_percent:91.67, pixel_area:786432, stitched_image_relpath:"images/hcm_q10/phuong_4/zoom_13.jpg" },
+      { zoom_level:14, capture_part:1, capture_part_count:2, tile_count:26, bbox_tile_count:32, completeness_percent:81.25, pixel_area:2097152, stitched_image_relpath:"images/hcm_q10/phuong_4/zoom_14_part_1.jpg" },
+      { zoom_level:14, capture_part:2, capture_part_count:2, tile_count:20, bbox_tile_count:24, completeness_percent:83.33, pixel_area:1572864, stitched_image_relpath:"images/hcm_q10/phuong_4/zoom_14_part_2.jpg" },
+      { zoom_level:15, capture_part:1, capture_part_count:1, tile_count:18, bbox_tile_count:18, completeness_percent:100.0, pixel_area:1179648, stitched_image_relpath:"images/hcm_q10/phuong_4/zoom_15.jpg" }
+    ]
+  },
+  { district_code:"HCM_Q10", district_name:"Quận 10", ward_code:"HCM_Q10_Phuong5", ward_name:"Phường 5",
+    available_zoom_levels:[10,11,12,13,14], image_count:5, total_tile_count:40,
+    most_complete_zoom_level:10, largest_capture_zoom_level:13, largest_canvas_zoom_level:13,
+    images:[
+      { zoom_level:10, capture_part:1, capture_part_count:1, tile_count:6, bbox_tile_count:6, completeness_percent:100.0, pixel_area:391680, stitched_image_relpath:"images/hcm_q10/phuong_5/zoom_10.jpg" },
+      { zoom_level:11, capture_part:1, capture_part_count:1, tile_count:2, bbox_tile_count:2, completeness_percent:100.0, pixel_area:131072, stitched_image_relpath:"images/hcm_q10/phuong_5/zoom_11.jpg" },
+      { zoom_level:12, capture_part:1, capture_part_count:1, tile_count:3, bbox_tile_count:3, completeness_percent:100.0, pixel_area:196608, stitched_image_relpath:"images/hcm_q10/phuong_5/zoom_12.jpg" },
+      { zoom_level:13, capture_part:1, capture_part_count:1, tile_count:19, bbox_tile_count:25, completeness_percent:76.0, pixel_area:1638400, stitched_image_relpath:"images/hcm_q10/phuong_5/zoom_13.jpg" },
+      { zoom_level:14, capture_part:1, capture_part_count:1, tile_count:10, bbox_tile_count:10, completeness_percent:100.0, pixel_area:655360, stitched_image_relpath:"images/hcm_q10/phuong_5/zoom_14.jpg" }
+    ]
+  },
+  { district_code:"HCM_Q10", district_name:"Quận 10", ward_code:"HCM_Q10_Phuong6", ward_name:"Phường 6",
+    available_zoom_levels:[10,14], image_count:2, total_tile_count:14,
+    most_complete_zoom_level:10, largest_capture_zoom_level:14, largest_canvas_zoom_level:14,
+    images:[
+      { zoom_level:10, capture_part:1, capture_part_count:1, tile_count:6, bbox_tile_count:6, completeness_percent:100.0, pixel_area:391680, stitched_image_relpath:"images/hcm_q10/phuong_6/zoom_10.jpg" },
+      { zoom_level:14, capture_part:1, capture_part_count:1, tile_count:8, bbox_tile_count:8, completeness_percent:100.0, pixel_area:524288, stitched_image_relpath:"images/hcm_q10/phuong_6/zoom_14.jpg" }
+    ]
+  },
+  { district_code:"HCM_Q10", district_name:"Quận 10", ward_code:"HCM_Q10_Phuong7", ward_name:"Phường 7",
+    available_zoom_levels:[10,11,12,13,14], image_count:5, total_tile_count:34,
+    most_complete_zoom_level:10, largest_capture_zoom_level:14, largest_canvas_zoom_level:14,
+    images:[
+      { zoom_level:10, capture_part:1, capture_part_count:1, tile_count:6, bbox_tile_count:6, completeness_percent:100.0, pixel_area:391680, stitched_image_relpath:"images/hcm_q10/phuong_7/zoom_10.jpg" },
+      { zoom_level:11, capture_part:1, capture_part_count:1, tile_count:5, bbox_tile_count:5, completeness_percent:100.0, pixel_area:327680, stitched_image_relpath:"images/hcm_q10/phuong_7/zoom_11.jpg" },
+      { zoom_level:12, capture_part:1, capture_part_count:1, tile_count:4, bbox_tile_count:4, completeness_percent:100.0, pixel_area:262144, stitched_image_relpath:"images/hcm_q10/phuong_7/zoom_12.jpg" },
+      { zoom_level:13, capture_part:1, capture_part_count:1, tile_count:5, bbox_tile_count:5, completeness_percent:100.0, pixel_area:327680, stitched_image_relpath:"images/hcm_q10/phuong_7/zoom_13.jpg" },
+      { zoom_level:14, capture_part:1, capture_part_count:1, tile_count:14, bbox_tile_count:16, completeness_percent:87.5, pixel_area:1048576, stitched_image_relpath:"images/hcm_q10/phuong_7/zoom_14.jpg" }
+    ]
+  },
+  { district_code:"HCM_Q10", district_name:"Quận 10", ward_code:"HCM_Q10_Phuong8", ward_name:"Phường 8",
+    available_zoom_levels:[10], image_count:1, total_tile_count:6,
+    most_complete_zoom_level:10, largest_capture_zoom_level:10, largest_canvas_zoom_level:10,
+    images:[{ zoom_level:10, capture_part:1, capture_part_count:1, tile_count:6, bbox_tile_count:6, completeness_percent:100.0, pixel_area:393216, stitched_image_relpath:"images/hcm_q10/phuong_8/zoom_10.jpg" }]
+  },
+  { district_code:"HCM_Q10", district_name:"Quận 10", ward_code:"HCM_Q10_Phuong9", ward_name:"Phường 9",
+    available_zoom_levels:[10,11], image_count:2, total_tile_count:10,
+    most_complete_zoom_level:10, largest_capture_zoom_level:11, largest_canvas_zoom_level:11,
+    images:[
+      { zoom_level:10, capture_part:1, capture_part_count:1, tile_count:6, bbox_tile_count:6, completeness_percent:100.0, pixel_area:307530, stitched_image_relpath:"images/hcm_q10/phuong_9/zoom_10.jpg" },
+      { zoom_level:11, capture_part:1, capture_part_count:1, tile_count:4, bbox_tile_count:12, completeness_percent:33.33, pixel_area:786432, stitched_image_relpath:"images/hcm_q10/phuong_9/zoom_11.jpg" }
+    ]
+  },
+  { district_code:"HCM_Q10", district_name:"Quận 10", ward_code:"HCM_Q10_Phuong10", ward_name:"Phường 10",
+    available_zoom_levels:[10,11,12,13,14], image_count:5, total_tile_count:29,
+    most_complete_zoom_level:10, largest_capture_zoom_level:11, largest_canvas_zoom_level:11,
+    images:[
+      { zoom_level:10, capture_part:1, capture_part_count:1, tile_count:6, bbox_tile_count:6, completeness_percent:100.0, pixel_area:348840, stitched_image_relpath:"images/hcm_q10/phuong_10/zoom_10.jpg" },
+      { zoom_level:11, capture_part:1, capture_part_count:1, tile_count:6, bbox_tile_count:6, completeness_percent:100.0, pixel_area:393216, stitched_image_relpath:"images/hcm_q10/phuong_10/zoom_11.jpg" },
+      { zoom_level:12, capture_part:1, capture_part_count:1, tile_count:5, bbox_tile_count:5, completeness_percent:100.0, pixel_area:327680, stitched_image_relpath:"images/hcm_q10/phuong_10/zoom_12.jpg" },
+      { zoom_level:13, capture_part:1, capture_part_count:1, tile_count:6, bbox_tile_count:6, completeness_percent:100.0, pixel_area:393216, stitched_image_relpath:"images/hcm_q10/phuong_10/zoom_13.jpg" },
+      { zoom_level:14, capture_part:1, capture_part_count:1, tile_count:6, bbox_tile_count:6, completeness_percent:100.0, pixel_area:393216, stitched_image_relpath:"images/hcm_q10/phuong_10/zoom_14.jpg" }
+    ]
+  },
+  { district_code:"HCM_Q10", district_name:"Quận 10", ward_code:"HCM_Q10_Phuong11", ward_name:"Phường 11",
+    available_zoom_levels:[10,11,12,13,14], image_count:5, total_tile_count:23,
+    most_complete_zoom_level:10, largest_capture_zoom_level:13, largest_canvas_zoom_level:13,
+    images:[
+      { zoom_level:10, capture_part:1, capture_part_count:1, tile_count:6, bbox_tile_count:6, completeness_percent:100.0, pixel_area:365670, stitched_image_relpath:"images/hcm_q10/phuong_11/zoom_10.jpg" },
+      { zoom_level:11, capture_part:1, capture_part_count:1, tile_count:4, bbox_tile_count:4, completeness_percent:100.0, pixel_area:262144, stitched_image_relpath:"images/hcm_q10/phuong_11/zoom_11.jpg" },
+      { zoom_level:12, capture_part:1, capture_part_count:1, tile_count:5, bbox_tile_count:5, completeness_percent:100.0, pixel_area:327680, stitched_image_relpath:"images/hcm_q10/phuong_11/zoom_12.jpg" },
+      { zoom_level:13, capture_part:1, capture_part_count:1, tile_count:6, bbox_tile_count:7, completeness_percent:85.71, pixel_area:458752, stitched_image_relpath:"images/hcm_q10/phuong_11/zoom_13.jpg" },
+      { zoom_level:14, capture_part:1, capture_part_count:1, tile_count:2, bbox_tile_count:2, completeness_percent:100.0, pixel_area:131072, stitched_image_relpath:"images/hcm_q10/phuong_11/zoom_14.jpg" }
+    ]
+  },
+  { district_code:"HCM_Q10", district_name:"Quận 10", ward_code:"HCM_Q10_Phuong12", ward_name:"Phường 12",
+    available_zoom_levels:[11], image_count:1, total_tile_count:17,
+    most_complete_zoom_level:11, largest_capture_zoom_level:11, largest_canvas_zoom_level:11,
+    images:[{ zoom_level:11, capture_part:1, capture_part_count:1, tile_count:17, bbox_tile_count:20, completeness_percent:85.0, pixel_area:1310720, stitched_image_relpath:"images/hcm_q10/phuong_12/zoom_11.jpg" }]
+  },
+  { district_code:"HCM_Q10", district_name:"Quận 10", ward_code:"HCM_Q10_Phuong13", ward_name:"Phường 13",
+    available_zoom_levels:[12], image_count:1, total_tile_count:13,
+    most_complete_zoom_level:12, largest_capture_zoom_level:12, largest_canvas_zoom_level:12,
+    images:[{ zoom_level:12, capture_part:1, capture_part_count:1, tile_count:13, bbox_tile_count:16, completeness_percent:81.25, pixel_area:1048576, stitched_image_relpath:"images/hcm_q10/phuong_13/zoom_12.jpg" }]
+  },
+  { district_code:"HCM_Q10", district_name:"Quận 10", ward_code:"HCM_Q10_Phuong14", ward_name:"Phường 14",
+    available_zoom_levels:[11], image_count:1, total_tile_count:15,
+    most_complete_zoom_level:11, largest_capture_zoom_level:11, largest_canvas_zoom_level:11,
+    images:[{ zoom_level:11, capture_part:1, capture_part_count:1, tile_count:15, bbox_tile_count:16, completeness_percent:93.75, pixel_area:1048576, stitched_image_relpath:"images/hcm_q10/phuong_14/zoom_11.jpg" }]
+  },
+  { district_code:"HCM_Q10", district_name:"Quận 10", ward_code:"HCM_Q10_Phuong15", ward_name:"Phường 15",
+    available_zoom_levels:[11,12], image_count:2, total_tile_count:21,
+    most_complete_zoom_level:11, largest_capture_zoom_level:12, largest_canvas_zoom_level:12,
+    images:[
+      { zoom_level:11, capture_part:1, capture_part_count:1, tile_count:9, bbox_tile_count:9, completeness_percent:100.0, pixel_area:589824, stitched_image_relpath:"images/hcm_q10/phuong_15/zoom_11.jpg" },
+      { zoom_level:12, capture_part:1, capture_part_count:1, tile_count:12, bbox_tile_count:12, completeness_percent:100.0, pixel_area:786432, stitched_image_relpath:"images/hcm_q10/phuong_15/zoom_12.jpg" }
+    ]
+  }
+];
+
+// Image base path — relative to this HTML file
+const IMG_BASE = "viewer_data/quyhoach_dataset_standard/";
+const MANIFEST_URL = IMG_BASE + "manifests/planning_dataset_auto_index.json";
+
+// ── State ──
+let currentWard = null;
+let currentImage = null;
+let scale = 1;
+let tx = 0, ty = 0;
+let isDragging = false;
+let dragStart = { x: 0, y: 0 };
+let imgNaturalW = 0, imgNaturalH = 0;
+
+const mapArea   = document.getElementById('map-area');
+const mapCont   = document.getElementById('map-container');
+const mapImg    = document.getElementById('map-img');
+const sourceMaskLayer = document.getElementById('source-mask-layer');
+const mapEmpty  = document.getElementById('map-empty');
+const mapLoad   = document.getElementById('map-loading');
+const zoomBadge = document.getElementById('zoom-badge');
+const compWarn  = document.getElementById('completeness-warn');
+const coords    = document.getElementById('coords');
+const measureLayer = document.getElementById('measure-layer');
+const measureHint = document.getElementById('measure-hint');
+const measureLineBtn = document.getElementById('measure-line-btn');
+const measureAreaBtn = document.getElementById('measure-area-btn');
+
+// User-calibrated from green planning labels: 18.18m measured on a 16M mark.
+const MEASURE_REFERENCE_ZOOM = 14;
+const GREEN_LABEL_PIXELS_PER_METER_Z14 = 17.611875;
+
+// Chỉ che vùng tiêu đề/blank nằm ngoài phần bản đồ quy hoạch; không sửa ảnh gốc.
+const SOURCE_TITLE_MASKS_BY_WARD = {
+  HCM_Q10_Phuong2: [
+    { x: 0, y: 0, width: 6600, height: 2100 }
+  ]
+};
+let measureMode = null;
+let measurePoints = [];
+let measureShapes = [];
+let measurePreview = null;
+
+// ── Init ──
+async function loadWardIndex() {
+  try {
+    const res = await fetch(MANIFEST_URL, { cache: 'no-store' });
+    if (!res.ok) throw new Error('manifest status ' + res.status);
+    const data = await res.json();
+    if (Array.isArray(data) && data.length) {
+      WARD_INDEX = data.map(row => ({
+        district_code: row.district_code,
+        district_name: row.district_name,
+        ward_code: row.ward_code,
+        ward_name: row.ward_name,
+        available_zoom_levels: row.available_zoom_levels || [row.target_zoom],
+        image_count: 1,
+        total_tile_count: row.tile_count || 0,
+        pixels_per_meter_z14: Number(row.pixels_per_meter_z14 || GREEN_LABEL_PIXELS_PER_METER_Z14),
+        target_zoom: row.target_zoom,
+        images: [{
+          zoom_level: row.target_zoom,
+          capture_part: 1,
+          capture_part_count: 1,
+          tile_count: row.tile_count || 0,
+          bbox_tile_count: row.tile_count || 0,
+          completeness_percent: 100,
+          pixel_area: (row.pixel_width || 0) * (row.pixel_height || 0),
+          pixels_per_meter_z14: Number(row.pixels_per_meter_z14 || GREEN_LABEL_PIXELS_PER_METER_Z14),
+          stitched_image_relpath: row.auto_image_relpath
+        }]
+      }));
+    }
+  } catch (err) {
+    console.warn('Dung dataset nhung san trong HTML vi khong doc duoc manifest moi:', err);
+  }
+}
+
+function pickBestImage(ward) {
+  const images = [...(ward?.images || [])];
+  if (!images.length) return null;
+  images.sort((a, b) => {
+    const areaDiff = (b.pixel_area || 0) - (a.pixel_area || 0);
+    if (areaDiff !== 0) return areaDiff;
+    return (b.zoom_level || 0) - (a.zoom_level || 0);
+  });
+  return images[0];
+}
+
+async function init() {
+  await loadWardIndex();
+  const sel = document.getElementById('sel-ward');
+  sel.innerHTML = '<option value="">â€” Chá»n phÆ°á»ng â€”</option>';
+  WARD_INDEX.forEach(w => {
+    const opt = document.createElement('option');
+    opt.value = w.ward_code;
+    opt.textContent = w.ward_name;
+    sel.appendChild(opt);
+  });
+  // keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
+    if (e.key === 'Escape' && measureMode) {
+      if (measurePoints.length || measurePreview) {
+        measurePoints = [];
+        measurePreview = null;
+        renderMeasurements();
+      } else {
+        setMeasureMode(null);
+      }
+      return;
+    }
+    if (e.key === 'Enter' && measureMode) {
+      e.preventDefault();
+      if (measureMode === 'line') finishLineMeasurement();
+      if (measureMode === 'area') finishAreaMeasurement();
+      return;
+    }
+    if ((e.key === 'Backspace' || e.key === 'Delete') && measureMode && measurePoints.length) {
+      e.preventDefault();
+      measurePoints.pop();
+      measurePreview = null;
+      renderMeasurements();
+      return;
+    }
+    if (e.key === 'c' || e.key === 'C') {
+      clearMeasurements();
+      return;
+    }
+    if (e.key === '=' || e.key === '+') zoomBy(1.3);
+    if (e.key === '-') zoomBy(1/1.3);
+    if (e.key === 'r' || e.key === 'R') resetView();
+    if (e.key === 'f' || e.key === 'F') fitToView();
+  });
+  // hide instructions after 4s
+  setTimeout(() => document.getElementById('instructions').classList.add('hide'), 4000);
+}
+
+function onDistrictChange() { /* future: load other districts */ }
+
+function onWardChange() {
+  const code = document.getElementById('sel-ward').value;
+  if (!code) return;
+  currentWard = WARD_INDEX.find(w => w.ward_code === code);
+  if (!currentWard) return;
+  updateWardInfo();
+  const defaultImg = pickBestImage(currentWard);
+  loadImage(defaultImg);
+}
+
+function updateWardInfo() {
+  const w = currentWard;
+  const selectedImg = pickBestImage(w);
+  document.getElementById('wi-imgcount').textContent = '1 ảnh tổng hợp';
+  document.getElementById('wi-tiles').textContent = w.total_tile_count;
+  document.getElementById('wi-zooms').textContent = 'Auto Z' + (w.target_zoom || w.available_zoom_levels.at(-1));
+  document.getElementById('wi-best').textContent = selectedImg ? 'Zoom ' + selectedImg.zoom_level : '-';
+  document.getElementById('wi-warn').style.display = 'none';
+  document.getElementById('ward-info').classList.add('show');
+  document.getElementById('layer-section').style.display = 'none';
+  document.getElementById('minimap-section').style.display = 'block';
+  return;
+  document.getElementById('wi-imgcount').textContent = w.image_count + ' ảnh';
+  document.getElementById('wi-tiles').textContent = w.total_tile_count;
+  document.getElementById('wi-zooms').textContent = w.available_zoom_levels.map(z=>'Z'+z).join(', ');
+  const bestImg = pickBestImage(w);
+  document.getElementById('wi-best').textContent = bestImg ? 'Zoom ' + bestImg.zoom_level : 'â€”';
+  const hasWarn = w.images.some(i => i.completeness_percent < 70);
+  const warnEl = document.getElementById('wi-warn');
+  if (hasWarn) {
+    warnEl.style.display = 'block';
+    warnEl.textContent = '⚠ Một số layer chưa phủ đủ tile từ HAR. Cần bổ sung HAR để có dữ liệu đầy đủ hơn.';
+  } else {
+    warnEl.style.display = 'none';
+  }
+  document.getElementById('ward-info').classList.add('show');
+  document.getElementById('layer-section').style.display = 'block';
+  document.getElementById('minimap-section').style.display = 'block';
+}
+
+function buildLayerList(defaultImg) {
+  const list = document.getElementById('layer-list');
+  list.innerHTML = '';
+  const w = currentWard;
+
+  w.images.forEach(img => {
+    const pct = img.completeness_percent;
+    const color = pct >= 90 ? '#22c55e' : pct >= 70 ? '#f59e0b' : '#ef4444';
+    const badgeClass = pct >= 90 ? 'badge-green' : pct >= 70 ? 'badge-orange' : 'badge-red';
+
+    const isDefault = defaultImg && img.stitched_image_relpath === defaultImg.stitched_image_relpath;
+    const label = img.capture_part_count > 1
+      ? `Zoom ${img.zoom_level} (Phần ${img.capture_part}/${img.capture_part_count})`
+      : `Zoom ${img.zoom_level}`;
+
+    const div = document.createElement('div');
+    div.className = 'layer-item' + (isDefault ? ' active' : '');
+    div.dataset.relpath = img.stitched_image_relpath;
+    div.innerHTML = `
+      <div>
+        <div style="font-weight:500">${label}</div>
+        <div class="layer-meta">${img.tile_count} tiles</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;min-width:80px">
+        <div class="completeness-bar-wrap"><div class="completeness-bar" style="width:${pct}%;background:${color}"></div></div>
+        <span class="badge ${badgeClass}">${pct.toFixed(0)}%</span>
+      </div>
+    `;
+    div.addEventListener('click', () => {
+      list.querySelectorAll('.layer-item').forEach(el => el.classList.remove('active'));
+      div.classList.add('active');
+      loadImage(img);
+    });
+    list.appendChild(div);
+  });
+}
+
+function renderSourceMasks() {
+  if (!sourceMaskLayer || !imgNaturalW || !imgNaturalH) return;
+  sourceMaskLayer.innerHTML = '';
+  sourceMaskLayer.style.width = imgNaturalW + 'px';
+  sourceMaskLayer.style.height = imgNaturalH + 'px';
+
+  const masks = SOURCE_TITLE_MASKS_BY_WARD[currentWard?.ward_code] || [];
+  masks.forEach(mask => {
+    const el = document.createElement('div');
+    el.className = 'source-mask';
+    el.style.left = mask.x + 'px';
+    el.style.top = mask.y + 'px';
+    el.style.width = mask.width + 'px';
+    el.style.height = mask.height + 'px';
+    sourceMaskLayer.appendChild(el);
+  });
+}
+
+function loadImage(img) {
+  currentImage = img;
+  clearMeasurements();
+  setMeasureMode(null);
+  mapEmpty.style.display = 'none';
+  mapLoad.classList.add('show');
+  mapImg.style.opacity = '0';
+  if (sourceMaskLayer) sourceMaskLayer.innerHTML = '';
+
+  const src = IMG_BASE + img.stitched_image_relpath;
+  const srcFresh = src + '?v=' + Date.now();
+
+  // update minimap
+  document.getElementById('minimap-img').src = srcFresh;
+  document.getElementById('minimap-label').textContent =
+    img.capture_part_count > 1
+      ? `Zoom ${img.zoom_level} · Phần ${img.capture_part}/${img.capture_part_count} · ${img.completeness_percent.toFixed(0)}% tile`
+      : `Zoom ${img.zoom_level} · ${img.completeness_percent.toFixed(0)}% tile`;
+
+  // completeness warning
+  if (img.completeness_percent < 70) {
+    compWarn.textContent = `⚠ Dữ liệu theo vùng đã tải từ HAR (${img.completeness_percent.toFixed(0)}%). Cần bổ sung HAR để có ảnh đầy đủ hơn.`;
+    compWarn.classList.add('show');
+  } else {
+    compWarn.classList.remove('show');
+  }
+
+  mapImg.onload = () => {
+    imgNaturalW = mapImg.naturalWidth;
+    imgNaturalH = mapImg.naturalHeight;
+    mapCont.style.width = imgNaturalW + 'px';
+    mapCont.style.height = imgNaturalH + 'px';
+    renderSourceMasks();
+    mapLoad.classList.remove('show');
+    mapImg.style.opacity = '1';
+    fitToView();
+  };
+  mapImg.onerror = () => {
+    mapLoad.classList.remove('show');
+    mapImg.style.opacity = '1';
+    mapEmpty.style.display = 'flex';
+    mapEmpty.querySelector('p').textContent = 'Không tìm thấy ảnh: ' + img.stitched_image_relpath;
+  };
+  mapImg.src = srcFresh;
+}
+
+// ---- Measurement tools ----
+function setMeasureMode(mode) {
+  if (mode === measureMode) mode = null;
+  measureMode = mode;
+  measurePoints = [];
+  measurePreview = null;
+  measureLineBtn.classList.toggle('active', measureMode === 'line');
+  measureAreaBtn.classList.toggle('active', measureMode === 'area');
+  mapArea.classList.toggle('measure-mode', !!measureMode);
+  updateMeasureHint();
+  renderMeasurements();
+}
+
+function clearMeasurements() {
+  measurePoints = [];
+  measurePreview = null;
+  measureShapes = [];
+  renderMeasurements();
+}
+
+function updateMeasureHint() {
+  measureHint.classList.remove('show');
+  measureHint.textContent = '';
+}
+
+function getImagePointFromEvent(e) {
+  const rect = mapArea.getBoundingClientRect();
+  const x = (e.clientX - rect.left - tx) / scale;
+  const y = (e.clientY - rect.top - ty) / scale;
+  if (x < 0 || y < 0 || x > imgNaturalW || y > imgNaturalH) return null;
+  return { x, y };
+}
+
+function toScreenPoint(point) {
+  return { x: point.x * scale + tx, y: point.y * scale + ty };
+}
+
+function distancePx(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function totalLengthPx(points, closed = false) {
+  let total = 0;
+  for (let i = 1; i < points.length; i++) total += distancePx(points[i - 1], points[i]);
+  if (closed && points.length > 2) total += distancePx(points[points.length - 1], points[0]);
+  return total;
+}
+
+function polygonAreaPx(points) {
+  if (points.length < 3) return 0;
+  let sum = 0;
+  for (let i = 0; i < points.length; i++) {
+    const a = points[i];
+    const b = points[(i + 1) % points.length];
+    sum += a.x * b.y - b.x * a.y;
+  }
+  return Math.abs(sum) / 2;
+}
+
+function centroid(points) {
+  const total = points.reduce((acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }), { x: 0, y: 0 });
+  return { x: total.x / points.length, y: total.y / points.length };
+}
+
+function getPixelsPerMeter() {
+  const referencePpm = Number(
+    currentImage?.pixels_per_meter_z14 ||
+    currentWard?.pixels_per_meter_z14 ||
+    GREEN_LABEL_PIXELS_PER_METER_Z14
+  );
+  const imageZoom = Number(currentImage?.zoom_level || currentWard?.target_zoom || MEASURE_REFERENCE_ZOOM);
+  const zoomFactor = Math.pow(2, imageZoom - MEASURE_REFERENCE_ZOOM);
+  const ppm = referencePpm * zoomFactor;
+  return ppm > 0 ? ppm : GREEN_LABEL_PIXELS_PER_METER_Z14;
+}
+
+function pxToMeters(px) {
+  return px / getPixelsPerMeter();
+}
+
+function px2ToSquareMeters(px2) {
+  const ppm = getPixelsPerMeter();
+  return px2 / (ppm * ppm);
+}
+
+function formatMetricNumber(value, digits = 2) {
+  const rounded = Number(value.toFixed(digits));
+  return rounded.toLocaleString('vi-VN', {
+    minimumFractionDigits: rounded % 1 === 0 ? 0 : Math.min(digits, 2),
+    maximumFractionDigits: digits,
+  });
+}
+
+function formatDistance(px) {
+  const meters = pxToMeters(px);
+  if (meters > 999) return formatMetricNumber(meters / 1000, 2) + ' km';
+  return formatMetricNumber(meters, 2) + ' m';
+}
+
+function formatArea(px2) {
+  const m2 = px2ToSquareMeters(px2);
+  if (m2 >= 1000000) return formatMetricNumber(m2 / 1000000, 2) + ' km2';
+  if (m2 >= 10000) return formatMetricNumber(m2 / 10000, 2) + ' ha';
+  return formatMetricNumber(m2, 2) + ' m2';
+}
+
+function svgEl(tag, attrs = {}) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
+  return el;
+}
+
+function drawLabel(group, point, text) {
+  const screen = toScreenPoint(point);
+  const label = svgEl('text', {
+    x: screen.x + 8,
+    y: screen.y - 8,
+    fill: '#111827',
+    stroke: '#ffffff',
+    'stroke-width': '4',
+    'paint-order': 'stroke',
+    'font-size': '12',
+    'font-weight': '700',
+    'font-family': 'Arial, sans-serif',
+  });
+  label.textContent = text;
+  group.appendChild(label);
+}
+
+function drawSegmentLabels(group, points, closed = false) {
+  const count = closed ? points.length : points.length - 1;
+  for (let i = 0; i < count; i++) {
+    const a = points[i];
+    const b = points[(i + 1) % points.length];
+    const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    drawLabel(group, mid, formatDistance(distancePx(a, b)));
+  }
+}
+
+function drawShape(shape, isPreview = false) {
+  const points = shape.points || [];
+  if (!points.length) return;
+  const group = svgEl('g');
+  const color = shape.type === 'area' ? '#059669' : '#dc2626';
+  const screenPoints = points.map(toScreenPoint);
+
+  if (shape.type === 'area' && points.length >= 2) {
+    group.appendChild(svgEl('polygon', {
+      points: screenPoints.map(p => `${p.x},${p.y}`).join(' '),
+      fill: isPreview ? 'rgba(5,150,105,.10)' : 'rgba(5,150,105,.16)',
+      stroke: color,
+      'stroke-width': '2.5',
+      'stroke-dasharray': isPreview ? '6 4' : '',
+    }));
+  } else if (points.length >= 2) {
+    group.appendChild(svgEl('polyline', {
+      points: screenPoints.map(p => `${p.x},${p.y}`).join(' '),
+      fill: 'none',
+      stroke: color,
+      'stroke-width': '3',
+      'stroke-linecap': 'round',
+      'stroke-dasharray': isPreview ? '6 4' : '',
+    }));
+  }
+
+  screenPoints.forEach(p => {
+    group.appendChild(svgEl('circle', {
+      cx: p.x,
+      cy: p.y,
+      r: '4',
+      fill: '#fff',
+      stroke: color,
+      'stroke-width': '2',
+    }));
+  });
+
+  if (shape.type === 'line' && points.length >= 2) {
+    drawSegmentLabels(group, points, false);
+  }
+
+  if (shape.type === 'area' && points.length >= 2) {
+    drawSegmentLabels(group, points, !isPreview && points.length >= 3);
+    if (!isPreview && points.length >= 3) {
+      const area = formatArea(polygonAreaPx(points));
+      drawLabel(group, centroid(points), `Dien tich: ${area}`);
+    }
+  }
+
+  measureLayer.appendChild(group);
+}
+
+function renderMeasurements() {
+  if (!measureLayer) return;
+  measureLayer.setAttribute('width', mapArea.clientWidth);
+  measureLayer.setAttribute('height', mapArea.clientHeight);
+  measureLayer.innerHTML = '';
+  measureShapes.forEach(shape => drawShape(shape));
+
+  let previewPoints = [...measurePoints];
+  if (measurePreview) previewPoints.push(measurePreview);
+  if (previewPoints.length) drawShape({ type: measureMode, points: previewPoints }, true);
+}
+
+function finishAreaMeasurement() {
+  if (measureMode !== 'area' || measurePoints.length < 3) return;
+  measureShapes.push({ type: 'area', points: [...measurePoints] });
+  measurePoints = [];
+  measurePreview = null;
+  renderMeasurements();
+}
+
+function finishLineMeasurement() {
+  if (measureMode !== 'line' || measurePoints.length < 2) return;
+  measureShapes.push({ type: 'line', points: [...measurePoints] });
+  measurePoints = [];
+  measurePreview = null;
+  renderMeasurements();
+}
+
+// ── Transform helpers ──
+function applyTransform() {
+  mapCont.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+  mapCont.style.transformOrigin = '0 0';
+  zoomBadge.textContent = `Zoom ${scale.toFixed(2)}×`;
+  renderMeasurements();
+}
+
+function fitToView() {
+  if (!imgNaturalW) return;
+  const aw = mapArea.clientWidth - 10;
+  const ah = mapArea.clientHeight - 50;
+  const sw = aw / imgNaturalW;
+  const sh = ah / imgNaturalH;
+  scale = Math.min(sw, sh, 1);
+  tx = (mapArea.clientWidth - imgNaturalW * scale) / 2;
+  ty = (mapArea.clientHeight - imgNaturalH * scale) / 2 + 20;
+  applyTransform();
+}
+
+function resetView() { fitToView(); }
+
+function zoomBy(factor, cx, cy) {
+  const prevScale = scale;
+  scale = Math.max(0.03, Math.min(scale * factor, 1.5));
+  const ratio = scale / prevScale;
+  const ox = cx ?? mapArea.clientWidth / 2;
+  const oy = cy ?? mapArea.clientHeight / 2;
+  tx = ox - (ox - tx) * ratio;
+  ty = oy - (oy - ty) * ratio;
+  applyTransform();
+}
+
+// ── Mouse events ──
+mapArea.addEventListener('mousedown', e => {
+  if (e.button !== 0) return;
+  if (measureMode || e.target.closest('#zoom-controls, #measure-tools')) return;
+  isDragging = true;
+  dragStart = { x: e.clientX - tx, y: e.clientY - ty };
+  mapArea.classList.add('grabbing');
+});
+
+window.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+  tx = e.clientX - dragStart.x;
+  ty = e.clientY - dragStart.y;
+  applyTransform();
+});
+
+window.addEventListener('mouseup', () => {
+  isDragging = false;
+  mapArea.classList.remove('grabbing');
+});
+
+mapArea.addEventListener('wheel', e => {
+  e.preventDefault();
+  const rect = mapArea.getBoundingClientRect();
+  const cx = e.clientX - rect.left;
+  const cy = e.clientY - rect.top;
+  const factor = e.deltaY < 0 ? 1.12 : 1/1.12;
+  zoomBy(factor, cx, cy);
+}, { passive: false });
+
+mapArea.addEventListener('click', e => {
+  if (!measureMode || e.target.closest('#zoom-controls, #measure-tools')) return;
+  e.preventDefault();
+  e.stopPropagation();
+  if (e.detail > 1) return;
+  if (!imgNaturalW) return;
+  const point = getImagePointFromEvent(e);
+  if (!point) return;
+
+  if (measureMode === 'line') {
+    if (!measurePoints.length) {
+      measurePoints = [point];
+      measurePreview = null;
+      renderMeasurements();
+    } else {
+      measureShapes.push({ type: 'line', points: [measurePoints[0], point] });
+      measurePoints = [];
+      measurePreview = null;
+      renderMeasurements();
+    }
+    return;
+  }
+
+  if (measureMode === 'area') {
+    measurePoints.push(point);
+    measurePreview = null;
+    renderMeasurements();
+  }
+});
+
+mapArea.addEventListener('mousemove', e => {
+  if (!measureMode || !measurePoints.length || e.target.closest('#zoom-controls, #measure-tools')) return;
+  measurePreview = getImagePointFromEvent(e);
+  renderMeasurements();
+});
+
+mapArea.addEventListener('contextmenu', e => {
+  if (!measureMode) return;
+  e.preventDefault();
+  measurePoints = [];
+  measurePreview = null;
+  renderMeasurements();
+});
+
+mapArea.addEventListener('dblclick', e => {
+  if (measureMode === 'area') {
+    e.preventDefault();
+    e.stopPropagation();
+    finishAreaMeasurement();
+    return;
+  }
+  if (measureMode === 'line') {
+    e.preventDefault();
+    e.stopPropagation();
+    return;
+  }
+  const rect = mapArea.getBoundingClientRect();
+  zoomBy(2, e.clientX - rect.left, e.clientY - rect.top);
+});
+
+// Touch support
+let lastTouchDist = null;
+let lastTouchMid = null;
+
+mapArea.addEventListener('touchstart', e => {
+  if (e.touches.length === 1) {
+    isDragging = true;
+    dragStart = { x: e.touches[0].clientX - tx, y: e.touches[0].clientY - ty };
+  } else if (e.touches.length === 2) {
+    isDragging = false;
+    lastTouchDist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    lastTouchMid = {
+      x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+      y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+    };
+  }
+}, { passive: true });
+
+mapArea.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (e.touches.length === 1 && isDragging) {
+    tx = e.touches[0].clientX - dragStart.x;
+    ty = e.touches[0].clientY - dragStart.y;
+    applyTransform();
+  } else if (e.touches.length === 2 && lastTouchDist) {
+    const dist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    const mid = {
+      x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+      y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+    };
+    const rect = mapArea.getBoundingClientRect();
+    zoomBy(dist / lastTouchDist, mid.x - rect.left, mid.y - rect.top);
+    lastTouchDist = dist;
+    lastTouchMid = mid;
+  }
+}, { passive: false });
+
+mapArea.addEventListener('touchend', () => {
+  isDragging = false; lastTouchDist = null; lastTouchMid = null;
+});
+
+// ── Save placeholder ──
+function saveMark() {
+  if (!currentWard) { alert('Vui lòng chọn phường trước'); return; }
+  const note = prompt(
+    `Lưu quy hoạch ${currentWard.ward_name} — ${currentWard.district_name}\n\nGhi chú (để trống nếu không có):`
+  );
+  if (note === null) return;
+  alert(`✅ Đã lưu kết quả quy hoạch vào hồ sơ nhà.\n\nPhường: ${currentWard.ward_name}\nLayer: Zoom ${currentImage?.zoom_level ?? '—'}\nGhi chú: ${note || '(không có)'}\n\n[Chức năng này sẽ kết nối với Supabase trong APP SKL]`);
+}
+
+init();
+</script>
+</body>
+</html>
